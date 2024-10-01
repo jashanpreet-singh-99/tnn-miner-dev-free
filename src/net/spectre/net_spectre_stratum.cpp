@@ -1,5 +1,5 @@
-#include "net.hpp"
-#include "hex.h"
+#include "../net.hpp"
+#include <hex.h>
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/ssl.hpp>
@@ -13,8 +13,8 @@
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/json.hpp>
 
-#include <stratum.h>
-#include <spectrex.h>
+#include <stratum/stratum.h>
+#include <spectrex/spectrex.h>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -26,7 +26,6 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCache *cache, bool isDev)
 {
   std::string M = packet.at("method").get_string().c_str();
-  // std::cout << "Stratum packet: " << boost::json::serialize(packet).c_str() << std::endl;
   if (M.compare(SpectreStratum::s_notify) == 0)
   {
     std::scoped_lock<boost::mutex> lockGuard(mutex);
@@ -40,11 +39,16 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
 
     uint64_t comboHeader[4] = {h1, h2, h3, h4};
 
+    (*J).as_object()["jobId"] = packet["params"].as_array()[0].get_string().c_str();
+
     bool isEqual = true;
     for (int i = 0; i < 4; i++) {
       isEqual &= comboHeader[i] == cache->header[i];
     }
-    if (isEqual) return 0;
+    if (!isEqual) {
+      uint64_t &N = isDev ? nonce0_dev : nonce0;
+      N = 0;
+    }
 
     for (int i = 0; i < 4; i++) {
       cache->header[i] = comboHeader[i];
@@ -68,13 +72,16 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
     memcpy(newTemplate + 48 + 16 - h4Str.size(), h4Str.data(), h4Str.size());
     memcpy(newTemplate + 64 + 16 - tsStr.size(), tsStr.data(), tsStr.size());
 
-    if(!beQuiet) {
+    if(!isEqual && !beQuiet) {
       setcolor(CYAN);
       if (!isDev)
         printf("\nStratum: new job received\n");
       fflush(stdout);
       setcolor(BRIGHT_WHITE);
     }
+
+    // if (!isDev) std::cout << "Stratum packet: " << boost::json::serialize(packet).c_str() << std::endl;
+
 
     SpectreStratum::lastReceivedJobTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
@@ -91,8 +98,8 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
         printf("Mining at: %s to wallet %s\n", host.c_str(), wallet.c_str());
         fflush(stdout);
         setcolor(CYAN);
-        printf("Dev fee: %.2f", devFee);
-        std::cout << "%" << std::endl;
+        printf("Dev fee: %.2f%% of your total hashrate\n", devFee);
+
         fflush(stdout);
         setcolor(BRIGHT_WHITE);
       }
@@ -116,6 +123,10 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
     (*d) = packet.at("params").as_array()[0].get_double();
     if ((*d) < 0.00000000001) (*d) = packet.at("params").as_array()[0].get_uint64();
 
+    uint256_t *dRef = isDev ? &bigDiff_dev : &bigDiff;
+    *dRef = SpectreX::diffToTarget(*d);
+
+    jobCounter++;
     // printf("%f\n", (*d));
   }
   else if (M.compare(SpectreStratum::s_setExtraNonce) == 0)
@@ -144,7 +155,7 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
   else if (M.compare(SpectreStratum::s_print) == 0)
   {
 
-    int lLevel = packet.at("params").as_array()[0].as_int64();
+    int lLevel = packet.at("params").as_array()[0].to_number<int64_t>();
     if (lLevel != SpectreStratum::STRATUM_DEBUG)
     {
       int res = 0;
@@ -192,7 +203,7 @@ int handleSpectreStratumResponse(boost::json::object packet, bool isDev)
 {
   // if (!isDev) {
   // if (!packet.contains("id")) return 0;
-  int64_t id = packet["id"].as_int64();
+  int64_t id = packet["id"].to_number<int64_t>();
   // std::cout << "Stratum packet: " << boost::json::serialize(packet).c_str() << std::endl;
 
   switch (id)
@@ -254,7 +265,6 @@ int handleSpectreStratumResponse(boost::json::object packet, bool isDev)
 }
 
 void spectre_stratum_session(
-    std::string hostProto,
     std::string host,
     std::string const &port,
     std::string const &wallet,

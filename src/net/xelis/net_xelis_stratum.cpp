@@ -1,5 +1,5 @@
-#include "net.hpp"
-#include "hex.h"
+#include "../net.hpp"
+#include <hex.h>
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/ssl.hpp>
@@ -13,8 +13,8 @@
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/json.hpp>
 
-#include <stratum.h>
-#include <xelis-hash.hpp>
+#include <stratum/stratum.h>
+#include <xelis-hash/xelis-hash.hpp>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -66,8 +66,8 @@ int handleXStratumPacket(boost::json::object packet, bool isDev)
         printf("Mining at: %s to wallet %s\n", host.c_str(), wallet.c_str());
         fflush(stdout);
         setcolor(CYAN);
-        printf("Dev fee: %.2f", devFee);
-        std::cout << "%" << std::endl;
+        printf("Dev fee: %.2f%% of your total hashrate\n", devFee);
+
         fflush(stdout);
         setcolor(BRIGHT_WHITE);
       }
@@ -119,7 +119,7 @@ int handleXStratumPacket(boost::json::object packet, bool isDev)
   else if (M.compare(XelisStratum::s_print) == 0)
   {
 
-    int lLevel = packet.at("params").as_array()[0].as_int64();
+    int lLevel = packet.at("params").as_array()[0].to_number<int64_t>();
     if (lLevel != XelisStratum::STRATUM_DEBUG)
     {
       int res = 0;
@@ -166,7 +166,7 @@ int handleXStratumResponse(boost::json::object packet, bool isDev)
 {
   // if (!isDev) {
   // if (!packet.contains("id")) return 0;
-  int64_t id = packet["id"].as_int64();
+  int64_t id = packet["id"].to_number<int64_t>();
 
   switch (id)
   {
@@ -227,7 +227,6 @@ int handleXStratumResponse(boost::json::object packet, bool isDev)
 }
 
 void xelis_stratum_session(
-    std::string hostProto,
     std::string host,
     std::string const &port,
     std::string const &wallet,
@@ -569,7 +568,6 @@ void xelis_stratum_session(
 }
 
 void xelis_stratum_session_nossl(
-    std::string hostProto,
     std::string host,
     std::string const &port,
     std::string const &wallet,

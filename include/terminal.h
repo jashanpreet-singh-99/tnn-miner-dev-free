@@ -63,8 +63,8 @@ static const char *DERO = R"(
     @          @   .     @@@@@@@@@@@     .   @          @       
     @          @    ..     @@@@@@@     ..    @          @       
     @          @@        .@@@@@@@@@.        @@          @       
-    @              @@     @@@@@@@@@     @@              @       
-    @                  @@ @@@@@@@@@ @@                  @       
+    @              @@    @@@@@@@@@@@    @@              @       
+    @                  @@@@@@@@@@@@@@@                  @       
        @                    @@@@@                    @@         
            @@                                    @              
                @@                           @@                  
@@ -134,6 +134,8 @@ inline po::options_description get_prog_opts()
     ("dero", "Will mine Dero")
     ("xelis", "Will mine Xelis")
     ("spectre", "Will mine Spectre")
+    ("randomx", "For mining RandomX coins")
+    ("astrix", "Will mine Astrix")
     ("stratum", "Required for mining to Stratum pools")
     ("broadcast", "Creates an http server to query miner stats")
     ("testnet", "Adjusts in-house parameters to mine on testnets")
@@ -145,6 +147,7 @@ inline po::options_description get_prog_opts()
     ("report-interval", po::value<int>(), "Your desired status update interval in seconds")
     ("no-lock", "Disables CPU affinity / CPU core binding")
     ("ignore-wallet", "Disables wallet validation, for specific uses with pool mining")
+    ("worker-name", po::value<std::string>(), "Sets the worker name for this instance when mining on Pools or Bridges")
     // ("gpu", "Mine with GPU instead of CPU")
     // ("batch-size", po::value<int>(), "(GPU Setting) Sets batch size used for GPU mining")
   ;
@@ -153,6 +156,7 @@ inline po::options_description get_prog_opts()
   dero.add_options()
     ("lookup", "Mine with lookup tables instead of computation")
     ("dero-benchmark", po::value<int>(), "Runs a mining benchmark for <arg> seconds (adheres to -t threads option)")
+    ("test-dero", "Runs a set of tests to verify AstrobwtV3 is working (1 test expected to fail)")
   ;
 
   po::options_description spectre("Spectre", col_width);
@@ -165,7 +169,17 @@ inline po::options_description get_prog_opts()
     ("xatum", "Required for mining to Xatum pools on Xelis")
     ("xelis-bench", "Run a benchmark of xelis-hash with 1 thread")
     ("test-xelis", "Run the xelis-hash tests from the official source code")
-    ("worker-name", po::value<std::string>(), "Sets the worker name for this instance when mining Xelis")
+  ;
+
+  po::options_description randomX("RandomX", col_width);
+  randomX.add_options()
+    ("rx-hugepages", "Use huge pages for RandomX")
+    ("test-randomx", "Run Tevador's reference RandomX tests")
+  ;
+
+  po::options_description astrix("Astrix", col_width);
+  astrix.add_options()
+    ("test-astrix", "Run a basic astrix-hash validation test")
   ;
 
   po::options_description advanced("Advanced", col_width);
@@ -177,7 +191,6 @@ inline po::options_description get_prog_opts()
 
   po::options_description debug("DEBUG", col_width);
   debug.add_options()
-    ("test-dero", "Runs a set of tests to verify AstrobwtV3 is working (1 test expected to fail)")
     ("op", po::value<int>(), "Sets which branch op to benchmark (0-255), benchmark will be skipped if unspecified")
     ("len", po::value<int>(), "Sets length of the processed chunk in said benchmark (default 15)")
     ("sabench", "Runs a benchmark for divsufsort on snapshot files in the 'tests' directory")
@@ -187,6 +200,8 @@ inline po::options_description get_prog_opts()
   general.add(dero);
   general.add(spectre);
   general.add(xelis);
+  general.add(randomX);
+  general.add(astrix);
   general.add(advanced);
   general.add(debug);
   return general;
