@@ -49,8 +49,6 @@ extern boost::mutex wsMutex;
 
 tcp::endpoint resolve_host(boost::mutex &wsMutex, net::io_context &ioc, net::yield_context yield, std::string host, std::string port);
 
-extern void do_session(std::string hostProto, std::string host, std::string const &port, std::string const &wallet, std::string const &worker, int algo, net::io_context &ioc, ssl::context &ctx, net::yield_context yield, bool isDev);
-
 inline void setForDisconnected(bool *connectedPtr, bool *submitPtr, bool *abortPtr, bool *dataReadyPtr, boost::condition_variable *cvPtr) {
   if (connectedPtr != nullptr) *connectedPtr = false;
   if (submitPtr != nullptr)    *submitPtr = false;
@@ -60,12 +58,22 @@ inline void setForDisconnected(bool *connectedPtr, bool *submitPtr, bool *abortP
 }
 
 // Report a failure
-inline void fail(beast::error_code ec, char const *what) noexcept
+inline void fail(beast::error_code ec, char const *where) noexcept
 {
   // mutex.lock();
   setcolor(RED);
   std::cerr << '\n'
-            << what << ": " << ec.message() << "\n";
+            << where << ": " << ec.message() << "\n";
+  setcolor(BRIGHT_WHITE);
+  // mutex.unlock();
+}
+
+inline void fail(char const *where, char const *why) noexcept
+{
+  // mutex.lock();
+  setcolor(RED);
+  std::cerr << '\n'
+            << where << ": " << why << "\n";
   setcolor(BRIGHT_WHITE);
   // mutex.unlock();
 }
@@ -140,7 +148,8 @@ inline tcp::endpoint resolve_host(boost::mutex &wsMutex, net::io_context &ioc, n
 
 // Session selector
 inline void do_session(
-    std::string hostProto,
+    std::string hostType,
+    int hostProtocol,
     std::string host,
     std::string const &port,
     std::string const &wallet,
@@ -151,36 +160,95 @@ inline void do_session(
     net::yield_context yield,
     bool isDev)
 {
-  bool use_ssl = (hostProto.find("ssl") != std::string::npos);
+  bool use_ssl = (hostType.find("ssl") != std::string::npos);
   switch (algo)
   {
+  #ifdef TNN_ASTROBWTV3
   case DERO_HASH:
-    dero_session(hostProto, host, port, wallet, worker, ioc, ctx, yield, isDev);
+    dero_session(host, port, wallet, worker, ioc, ctx, yield, isDev);
     break;
+  #endif
+  #ifdef TNN_XELISHASH
   case XELIS_HASH:
   {
-    switch (protocol)
+    switch (hostProtocol)
     {
     case XELIS_SOLO:
-      xelis_session(hostProto, host, port, wallet, worker, ioc, yield, isDev);
+      xelis_session(host, port, wallet, worker, ioc, yield, isDev);
       break;
     case XELIS_XATUM:
-      xatum_session(hostProto, host, port, wallet, worker, ioc, ctx, yield, isDev);
+      xatum_session(host, port, wallet, worker, ioc, ctx, yield, isDev);
       break;
     case XELIS_STRATUM:
     {
       if(use_ssl) {
-        xelis_stratum_session(hostProto, host, port, wallet, worker, ioc, ctx, yield, isDev);
+        xelis_stratum_session(host, port, wallet, worker, ioc, ctx, yield, isDev);
       } else {
-        xelis_stratum_session_nossl(hostProto, host, port, wallet, worker, ioc, ctx, yield, isDev);
+        xelis_stratum_session_nossl(host, port, wallet, worker, ioc, ctx, yield, isDev);
       }
       break;
     }
     }
     break;
   }
+  #endif
+  #ifdef TNN_ASTROBWTV3
   case SPECTRE_X:
-    spectre_stratum_session(hostProto, host, port, wallet, worker, ioc, ctx, yield, isDev);
+    spectre_stratum_session(host, port, wallet, worker, ioc, ctx, yield, isDev);
     break;
+  #endif
+  #ifdef TNN_RANDOMX
+  case RX0:
+  {
+    switch (hostProtocol)
+    {
+      case RX0_SOLO:
+        rx0_session(host, port, wallet, isDev);
+        break;
+      case RX0_STRATUM:
+      {
+        if(use_ssl) {
+          rx0_stratum_session(host, port, wallet, worker, ioc, ctx, yield, isDev);
+        } else {
+          rx0_stratum_session_nossl(host, port, wallet, worker, ioc, ctx, yield, isDev);
+        }
+        break;
+      }
+    }
+    break;
+  }
+  #endif
+  #ifdef TNN_VERUSHASH
+  case VERUSHASH:
+  {
+    switch (hostProtocol)
+    {
+      case VERUS_SOLO:
+        break;
+      case VERUS_STRATUM:
+      {
+        // if (use_ssl) {
+
+        // } else {
+          verus_stratum_session(host, port, wallet, worker, ioc, ctx, yield, isDev);
+        // }
+        break;
+      }
+    }
+    break;
+  }
+  #endif
+  #ifdef TNN_ASTRIXHASH
+  case ASTRIX_HASH:
+    switch (hostProtocol)
+    {
+      case ASTRIX_SOLO:
+        astrix_session(host, port, wallet, isDev);
+        break;
+      case ASTRIX_STRATUM:
+        astrix_stratum_session(host, port, wallet, worker, ioc, ctx, yield, isDev);
+        break;
+    }
+  #endif
   }
 }
