@@ -108,8 +108,10 @@ int accepted;
 
 //uint64_t hashrate;
 int64_t ourHeight;
+int64_t devHeight;
 
 int64_t difficulty;
+int64_t difficultyDev;
 
 double doubleDiff;
 double doubleDiffDev;
