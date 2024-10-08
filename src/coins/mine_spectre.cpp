@@ -9,17 +9,17 @@ void mineSpectre(int tid)
 {
   int64_t localJobCounter;
   int64_t localOurHeight = 0;
-  int64_t localDevHeight = 0;
+  // int64_t localDevHeight = 0;
 
   byte powHash[32];
   byte work[SpectreX::INPUT_SIZE] = {0};
-  byte devWork[SpectreX::INPUT_SIZE] = {0};
+  // byte devWork[SpectreX::INPUT_SIZE] = {0};
 
   std::string diffHex;
-  std::string diffHex_dev;
+  // std::string diffHex_dev;
 
   byte diffBytes[32];
-  byte diffBytes_dev[32];
+  // byte diffBytes_dev[32];
 
   workerData *astroWorker = (workerData *)malloc_huge_pages(sizeof(workerData));
   SpectreX::worker *worker = (SpectreX::worker *)malloc_huge_pages(sizeof(SpectreX::worker));
@@ -27,11 +27,11 @@ void mineSpectre(int tid)
   lookupGen(*astroWorker, nullptr, nullptr);
   worker->astroWorker = astroWorker;
 
-  workerData *devAstroWorker = (workerData *)malloc_huge_pages(sizeof(workerData));
-  SpectreX::worker *devWorker = (SpectreX::worker *)malloc_huge_pages(sizeof(SpectreX::worker));
-  initWorker(*devAstroWorker);
-  lookupGen(*devAstroWorker, nullptr, nullptr);
-  devWorker->astroWorker = devAstroWorker;
+  // workerData *devAstroWorker = (workerData *)malloc_huge_pages(sizeof(workerData));
+  // SpectreX::worker *devWorker = (SpectreX::worker *)malloc_huge_pages(sizeof(SpectreX::worker));
+  // initWorker(*devAstroWorker);
+  // lookupGen(*devAstroWorker, nullptr, nullptr);
+  // devWorker->astroWorker = devAstroWorker;
 
 waitForJob:
 
@@ -46,18 +46,18 @@ waitForJob:
     {
       bool assigned = false;
       boost::json::value myJob;
-      boost::json::value myJobDev;
+      // boost::json::value myJobDev;
       {
         std::scoped_lock<boost::mutex> lockGuard(mutex);
         myJob = job;
-        myJobDev = devJob;
+        // myJobDev = devJob;
         localJobCounter = jobCounter;
       }
       
       if (!myJob.at("template").is_string()) {
         continue;
       }
-      if (ourHeight == 0 && devHeight == 0)
+      if (ourHeight == 0)
         continue;
 
       if (ourHeight == 0 || localOurHeight != ourHeight)
@@ -80,66 +80,66 @@ waitForJob:
         localOurHeight = ourHeight;
       }
 
-      if (devConnected && myJobDev.at("template").is_string())
-      {
-        if (devHeight == 0 || localDevHeight != devHeight)
-        {
-          byte *b2d = new byte[SpectreX::INPUT_SIZE];
-          switch (protocol)
-          {
-          case SPECTRE_SOLO:
-            hexstrToBytes(std::string(myJobDev.at("template").as_string()), b2d);
-            break;
-          case SPECTRE_STRATUM:
-            hexstrToBytes(std::string(myJobDev.at("template").as_string()), b2d);
-            break;
-          }
-          memcpy(devWork, b2d, SpectreX::INPUT_SIZE);
-          SpectreX::newMatrix(devWork, devWorker->matBuffer, *devWorker);
-          // SpectreX::genPrePowHash(b2d, *devWorker);
-          // SpectreX::newMatrix(b2d, devWorker->mat);
-          delete[] b2d;
-          localDevHeight = devHeight;
-        }
-      }
+      // if (devConnected && myJobDev.at("template").is_string())
+      // {
+      //   if (devHeight == 0 || localDevHeight != devHeight)
+      //   {
+      //     byte *b2d = new byte[SpectreX::INPUT_SIZE];
+      //     switch (protocol)
+      //     {
+      //     case SPECTRE_SOLO:
+      //       hexstrToBytes(std::string(myJobDev.at("template").as_string()), b2d);
+      //       break;
+      //     case SPECTRE_STRATUM:
+      //       hexstrToBytes(std::string(myJobDev.at("template").as_string()), b2d);
+      //       break;
+      //     }
+      //     memcpy(devWork, b2d, SpectreX::INPUT_SIZE);
+      //     SpectreX::newMatrix(devWork, devWorker->matBuffer, *devWorker);
+      //     // SpectreX::genPrePowHash(b2d, *devWorker);
+      //     // SpectreX::newMatrix(b2d, devWorker->mat);
+      //     delete[] b2d;
+      //     localDevHeight = devHeight;
+      //   }
+      // }
 
-      bool devMine = false;
+      // bool devMine = false;
       double which;
       bool submit = false;
       double DIFF = 1;
       diffHex.clear();
-      diffHex_dev.clear();
+      // diffHex_dev.clear();
 
       diffHex = cpp_int_toHex(bigDiff);
-      diffHex_dev = cpp_int_toHex(bigDiff_dev);
+      // diffHex_dev = cpp_int_toHex(bigDiff_dev);
 
       cpp_int_to_byte_array(bigDiff, diffBytes);
-      cpp_int_to_byte_array(bigDiff_dev, diffBytes_dev);
+      // cpp_int_to_byte_array(bigDiff_dev, diffBytes_dev);
 
       // printf("end of job application\n");
       while (localJobCounter == jobCounter)
       {
         which = (double)(rand() % 10000);
-        devMine = (devConnected && devHeight > 0 && which < devFee * 100.0);
-        DIFF = devMine ? doubleDiffDev : doubleDiff;
+        // devMine = (devConnected && devHeight > 0 && which < devFee * 100.0);
+        DIFF = doubleDiff;
         if (DIFF == 0)
           continue;
 
         // cmpDiff = ConvertDifficultyToBig(DIFF, SPECTRE_X);
-        byte* cmpDiff = devMine ? diffBytes_dev : diffBytes;
+        byte* cmpDiff = diffBytes;
 
-        uint64_t *nonce = devMine ? &nonce0_dev : &nonce0;
+        uint64_t *nonce = &nonce0;
         (*nonce)++;
 
         // printf("nonce = %llu\n", *nonce);
 
-        byte *WORK = (devMine && devConnected) ? &devWork[0] : &work[0];
+        byte *WORK = &work[0];
         byte *nonceBytes = &WORK[72];
         uint64_t n;
         
         int enLen = 0;
         
-        boost::json::value &J = devMine ? myJobDev : myJob;
+        boost::json::value &J = myJob;
         if (!J.as_object().if_contains("extraNonce") || J.at("extraNonce").as_string().size() == 0)
           n = ((tid - 1) % (256 * 256)) | ((rand() % 256) << 16) | ((*nonce) << 24);
         else {
@@ -157,7 +157,7 @@ waitForJob:
           break;
         }
 
-        SpectreX::worker &usedWorker = devMine ? *devWorker : *worker;
+        SpectreX::worker &usedWorker = *worker;
         SpectreX::hash(usedWorker, WORK, SpectreX::INPUT_SIZE, powHash);
 
         // if (littleEndian())
@@ -166,7 +166,7 @@ waitForJob:
         // }
 
         counter.fetch_add(1);
-        submit = (devMine && devConnected) ? !submittingDev : !submitting;
+        submit = !submitting;
 
         if (localJobCounter != jobCounter || localOurHeight != ourHeight) {
           // printf("thread %d updating job after hash\n", tid);
@@ -179,17 +179,17 @@ waitForJob:
           // printf("thread %d entered submission process\n", tid);
           if (!submit) {
             for(;;) {
-              submit = (devMine && devConnected) ? !submittingDev : !submitting;
-              int64_t &rH = devMine ? devHeight : ourHeight;
-              int64_t &oH = devMine ? localDevHeight : localOurHeight;
+              submit = !submitting;
+              int64_t &rH = ourHeight;
+              int64_t &oH = localOurHeight;
               if (submit || localJobCounter != jobCounter || rH != oH)
                 break;
               boost::this_thread::yield();
             }
           }
 
-          int64_t &rH = devMine ? devHeight : ourHeight;
-          int64_t &oH = devMine ? localDevHeight : localOurHeight;
+          int64_t &rH = ourHeight;
+          int64_t &oH = localOurHeight;
           if (localJobCounter != jobCounter || rH != oH) {
             // printf("thread %d updating job after check\n", tid);
             break;
@@ -200,38 +200,38 @@ waitForJob:
           // }
         //   std::string b64 = base64::to_base64(std::string((char *)&WORK[0], XELIS_TEMPLATE_SIZE));
           // boost::lock_guard<boost::mutex> lock(mutex);
-          if (devMine)
-          {
-            submittingDev = true;
-            // std::scoped_lock<boost::mutex> lockGuard(devMutex);
-            // if (localJobCounter != jobCounter || localDevHeight != devHeight)
-            // {
-            //   break;
-            // }
-            setcolor(CYAN);
-            std::cout << "\n(DEV) Thread " << tid << " found a dev share\n" << std::flush;
-            setcolor(BRIGHT_WHITE);
-            switch (protocol)
-            {
-            case SPECTRE_SOLO:
-              devShare = {{"block_template", hexStr(&WORK[0], SpectreX::INPUT_SIZE).c_str()}};
-              break;
-            case SPECTRE_STRATUM:
-              std::vector<char> nonceStr;
-              // Num(std::to_string((n << enLen*8) >> enLen*8).c_str(),10).print(nonceStr, 16);
-              Num(std::to_string(n).c_str(),10).print(nonceStr, 16);
-              devShare = {{{"id", SpectreStratum::submitID},
-                        {"method", SpectreStratum::submit.method.c_str()},
-                        {"params", {devWorkerName,                                   // WORKER
-                                    myJobDev.at("jobId").as_string().c_str(), // JOB ID
-                                    std::string(nonceStr.data()).c_str()}}}};
+          // if (devMine)
+          // {
+          //   submittingDev = true;
+          //   // std::scoped_lock<boost::mutex> lockGuard(devMutex);
+          //   // if (localJobCounter != jobCounter || localDevHeight != devHeight)
+          //   // {
+          //   //   break;
+          //   // }
+          //   setcolor(CYAN);
+          //   std::cout << "\n(DEV) Thread " << tid << " found a dev share\n" << std::flush;
+          //   setcolor(BRIGHT_WHITE);
+          //   switch (protocol)
+          //   {
+          //   case SPECTRE_SOLO:
+          //     devShare = {{"block_template", hexStr(&WORK[0], SpectreX::INPUT_SIZE).c_str()}};
+          //     break;
+          //   case SPECTRE_STRATUM:
+          //     std::vector<char> nonceStr;
+          //     // Num(std::to_string((n << enLen*8) >> enLen*8).c_str(),10).print(nonceStr, 16);
+          //     Num(std::to_string(n).c_str(),10).print(nonceStr, 16);
+          //     devShare = {{{"id", SpectreStratum::submitID},
+          //               {"method", SpectreStratum::submit.method.c_str()},
+          //               {"params", {devWorkerName,                                   // WORKER
+          //                           myJobDev.at("jobId").as_string().c_str(), // JOB ID
+          //                           std::string(nonceStr.data()).c_str()}}}};
 
-              break;
-            }
-            data_ready = true;
-          }
-          else
-          {
+          //     break;
+          //   }
+          //   data_ready = true;
+          // }
+          // else
+          // {
             submitting = true;
             // std::scoped_lock<boost::mutex> lockGuard(userMutex);
             // if (localJobCounter != jobCounter || localOurHeight != ourHeight)
@@ -273,7 +273,7 @@ waitForJob:
               break;
             }
             data_ready = true;
-          }
+          // }
           // printf("thread %d finished submission process\n", tid);
           cv.notify_all();
         }
@@ -299,7 +299,7 @@ waitForJob:
 
       localJobCounter = -1;
       localOurHeight = -1;
-      localDevHeight = -1;
+      // localDevHeight = -1;
     }
     if (!isConnected) {
       data_ready = true;
