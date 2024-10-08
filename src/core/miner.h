@@ -50,6 +50,10 @@ bool checkWallet = true;
 
 extern uint64_t nonce0;
 
+// Dev stuff external TODO later
+extern uint64_t nonce0_dev;
+
+
 int tuneWarmupSec;
 int tuneDurationSec;
 

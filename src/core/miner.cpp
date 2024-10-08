@@ -60,8 +60,10 @@ int reportCounter = 0;
 int reportInterval = 3;
 
 uint256_t bigDiff(0);
+uint256_t bigDiff_dev(0);
 
 uint64_t nonce0 = 0;
+uint64_t nonce0_dev = 0;
 
 std::string HIP_names[32];
 std::vector<std::atomic<int64_t>> HIP_counters(32);
@@ -110,6 +112,7 @@ int64_t ourHeight;
 int64_t difficulty;
 
 double doubleDiff;
+double doubleDiffDev;
 
 bool useLookupMine = false;
 
@@ -121,6 +124,7 @@ std::string workerName = "default";
 std::string workerNameFromWallet = "";
 
 bool isConnected = false;
+bool devConnected = false;
 
 bool beQuiet = false;
 /* End definitions from tnn-common.hpp */
