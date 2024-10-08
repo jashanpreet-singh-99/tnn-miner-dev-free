@@ -57,7 +57,7 @@ extern int miningAlgo;
 // Dev fee is a % of hashrate
 extern int batchSize;
 extern double minFee;
-// extern double devFee;
+extern double devFee;
 
 extern int jobCounter;
 extern int reportCounter;
@@ -71,13 +71,13 @@ extern int accepted;
 
 //extern uint64_t hashrate;
 extern int64_t ourHeight;
-//extern int64_t devHeight;
+extern int64_t devHeight;
 
 extern int64_t difficulty;
-//extern int64_t difficultyDev;
+extern int64_t difficultyDev;
 
 extern double doubleDiff;
-//extern double doubleDiffDev;
+extern double doubleDiffDev;
 
 extern std::vector<int64_t> rate5min;
 extern std::vector<int64_t> rate1min;
@@ -87,7 +87,7 @@ extern std::atomic<int64_t> counter;
 extern std::atomic<int64_t> benchCounter;
 
 extern bool isConnected;
-//extern bool devConnected;
+extern bool devConnected;
 
 extern bool beQuiet;
 
