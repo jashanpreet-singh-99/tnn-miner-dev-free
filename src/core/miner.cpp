@@ -61,7 +61,7 @@ int reportInterval = 3;
 
 uint256_t bigDiff(0);
 
-extern uint64_t nonce0 = 0;
+uint64_t nonce0 = 0;
 
 std::string HIP_names[32];
 std::vector<std::atomic<int64_t>> HIP_counters(32);

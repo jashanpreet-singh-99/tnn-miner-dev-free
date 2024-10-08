@@ -48,6 +48,8 @@ bool gpuMine = false;
 bool broadcastStats = false;
 bool checkWallet = true;
 
+extern uint64_t nonce0;
+
 int tuneWarmupSec;
 int tuneDurationSec;
 
