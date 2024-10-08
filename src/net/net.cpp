@@ -24,16 +24,16 @@ boost::mutex wsMutex;
 
 /* Start definitions from net.hpp */
 boost::json::value job = boost::json::value({});
-// boost::json::value devJob = boost::json::value({});
+boost::json::value devJob = boost::json::value({});
 
 std::string currentBlob;
-// std::string devBlob;
+std::string devBlob;
 
 boost::json::object share = {};
-// boost::json::object devShare = {};
+boost::json::object devShare = {};
 
 bool submitting = false;
-// bool submittingDev = false;
+bool submittingDev = false;
 boost::condition_variable cv;
 bool data_ready = false;
 /* End definitions from net.hpp */
