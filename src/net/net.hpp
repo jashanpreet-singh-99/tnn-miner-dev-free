@@ -30,16 +30,16 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 
 extern boost::json::value job;
-// extern boost::json::value devJob;
+extern boost::json::value devJob;
 
 extern std::string currentBlob;
-// extern std::string devBlob;
+extern std::string devBlob;
 
 extern boost::json::object share;
-// extern boost::json::object devShare;
+extern boost::json::object devShare;
 
 extern bool submitting;
-// extern bool submittingDev;
+extern bool submittingDev;
 
 extern boost::condition_variable cv;
 extern boost::mutex mutex;
