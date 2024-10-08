@@ -23,7 +23,7 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCache *cache, bool isDev)
+int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCache *cache)
 {
   std::string M = packet.at("method").get_string().c_str();
   if (M.compare(SpectreStratum::s_notify) == 0)
@@ -79,9 +79,6 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
       setcolor(BRIGHT_WHITE);
     }
 
-    // if (!isDev) std::cout << "Stratum packet: " << boost::json::serialize(packet).c_str() << std::endl;
-
-
     SpectreStratum::lastReceivedJobTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
 
@@ -122,7 +119,6 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
   {
     std::scoped_lock<boost::mutex> lockGuard(mutex);
     boost::json::value *J = &job;
-    // uint64_t *h = isDev ? &devHeight : &ourHeight;
 
     // std::string bs = (*J).at("template").get<std::string>();
     // char *blob = (char *)bs.c_str();
@@ -149,15 +145,6 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
     {
       int res = 0;
       printf("\n");
-      if (isDev)
-      {
-        setcolor(CYAN);
-        printf("DEV | ");
-        printf("HOW | ");
-        printf("HOW | ");
-        printf("HOW | ");
-        printf("HOW is dev working | ");
-      }
 
       switch (lLevel)
       {
@@ -189,12 +176,9 @@ int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCa
   return 0;
 }
 
-int handleSpectreStratumResponse(boost::json::object packet, bool isDev)
+int handleSpectreStratumResponse(boost::json::object packet)
 {
-  // if (!isDev) {
-  // if (!packet.contains("id")) return 0;
   int64_t id = packet["id"].to_number<int64_t>();
-  // std::cout << "Stratum packet: " << boost::json::serialize(packet).c_str() << std::endl;
 
   switch (id)
   {
@@ -206,10 +190,6 @@ int handleSpectreStratumResponse(boost::json::object packet, bool isDev)
         const char *errorMsg = packet["error"].get_string().c_str();
         setcolor(RED);
         printf("\n");
-        if (isDev) {
-          setcolor(CYAN);
-          printf("DEV | ");
-        }
         printf("Stratum ERROR: %s\n", errorMsg);
         fflush(stdout);
         return -1;
@@ -219,23 +199,17 @@ int handleSpectreStratumResponse(boost::json::object packet, bool isDev)
     case SpectreStratum::submitID:
     {
       printf("\n");
-      if (isDev)
-      {
-        setcolor(CYAN);
-        printf("DEV | ");
-      }
       if (!packet["result"].is_null() && packet.at("result").get_bool())
       {
-        if (!isDev) accepted++;
+        accepted++;
         std::cout << "Stratum: share accepted" << std::endl;
         fflush(stdout);
         setcolor(BRIGHT_WHITE);
       }
       else
       {
-        if (!isDev) rejected++;
-        if (!isDev)
-          setcolor(RED);
+        rejected++;
+        setcolor(RED);
 
         boost::json::string ERR;
         if (packet["error"].is_array()) {
@@ -333,7 +307,7 @@ void spectre_stratum_session(
       boost::json::object subRPC = boost::json::parse(packet.c_str()).as_object();
       if (subRPC.contains("method"))
       {
-        handleSpectreStratumPacket(subRPC, &jobCache, isDev);
+        handleSpectreStratumPacket(subRPC, &jobCache);
       } 
     }
   } catch (const std::exception &e) {
@@ -383,7 +357,7 @@ void spectre_stratum_session(
       boost::json::object authRPC = boost::json::parse(packet.c_str()).as_object();
       if (authRPC.contains("method"))
       {
-        handleSpectreStratumPacket(authRPC, &jobCache, isDev);
+        handleSpectreStratumPacket(authRPC, &jobCache);
       }
     }
   } catch (const std::exception &e) {
@@ -417,8 +391,6 @@ void spectre_stratum_session(
 
   // printf("after parse\n");
 
-  // handleXStratumPacket(subResJson, isDev);
-
   // // This buffer will hold the incoming message
   // beast::flat_buffer buffer;
   // std::stringstream workInfo;
@@ -439,8 +411,6 @@ void spectre_stratum_session(
       if (abort) break;
       try {
         boost::json::object *S = &share;
-        // if (isDev)
-        //   S = &devShare;
 
         boost::system::error_code ec;
         std::string msg = boost::json::serialize((*S)) + "\n";
@@ -452,7 +422,7 @@ void spectre_stratum_session(
             fflush(stdout);
             abort = true;
           }
-          if (!isDev) SpectreStratum::lastShareSubmissionTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+          SpectreStratum::lastShareSubmissionTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
           // (*B) = false;
           // data_ready = false;
         });
@@ -501,7 +471,7 @@ void spectre_stratum_session(
       trans = boost::asio::async_read_until(stream, response, "\n", yield[ec]);
       if (ec) {
         setcolor(RED);
-        printf("failed to read: %s\n", isDev ? "dev" : "user");
+        printf("failed to read: %s\n", "user");
         fflush(stdout);
         setcolor(BRIGHT_WHITE);
         setForDisconnected(C, B, &abort, &data_ready, &cv);
@@ -575,11 +545,11 @@ void spectre_stratum_session(
                 }
               }
               else
-                handleSpectreStratumPacket(sRPC, &jobCache, isDev);
+                handleSpectreStratumPacket(sRPC, &jobCache);
             }
             else
             {
-              handleSpectreStratumResponse(sRPC, isDev);
+              handleSpectreStratumResponse(sRPC);
             } 
           } catch(const std::exception &e){
             // printf("\n\n packet count: %d, msg size: %llu\n\n", packets.size(), trans);
@@ -630,11 +600,11 @@ void spectre_stratum_session(
                     }
                   }
                   else
-                    handleSpectreStratumPacket(sRPC, &jobCache, isDev);
+                    handleSpectreStratumPacket(sRPC, &jobCache);
                 }
                 else
                 {
-                  handleSpectreStratumResponse(sRPC, isDev);
+                  handleSpectreStratumResponse(sRPC);
                 }
                 chopQueue = "NULL";
                 // printf("COMBINE WORKED!\n\n");

@@ -575,7 +575,7 @@ void verus_stratum_session(
                 }
               }
               else
-                handleSpectreStratumPacket(sRPC, &jobCache, isDev);
+                handleSpectreStratumPacket(sRPC, &jobCache);
             }
             else
             {
@@ -630,11 +630,11 @@ void verus_stratum_session(
                     }
                   }
                   else
-                    handleSpectreStratumPacket(sRPC, &jobCache, isDev);
+                    handleSpectreStratumPacket(sRPC, &jobCache);
                 }
                 else
                 {
-                  handleSpectreStratumResponse(sRPC, isDev);
+                  handleSpectreStratumResponse(sRPC);
                 }
                 chopQueue = "NULL";
                 // printf("COMBINE WORKED!\n\n");

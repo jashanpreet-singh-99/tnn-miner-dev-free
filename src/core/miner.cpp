@@ -60,10 +60,8 @@ int reportCounter = 0;
 int reportInterval = 3;
 
 uint256_t bigDiff(0);
-uint256_t bigDiff_dev(0);
 
 extern uint64_t nonce0 = 0;
-extern uint64_t nonce0_dev = 0;
 
 std::string HIP_names[32];
 std::vector<std::atomic<int64_t>> HIP_counters(32);
@@ -93,8 +91,8 @@ std::string wallet = "NULL";
 // Dev fee config
 // Dev fee is a % of hashrate
 int batchSize = 5000;
-double minFee = 1.0;
-double devFee = 2.5;
+double minFee = 0.01;
+double devFee = 0.01;
 
 int jobCounter;
 
@@ -108,13 +106,10 @@ int accepted;
 
 //uint64_t hashrate;
 int64_t ourHeight;
-int64_t devHeight;
 
 int64_t difficulty;
-int64_t difficultyDev;
 
 double doubleDiff;
-double doubleDiffDev;
 
 bool useLookupMine = false;
 
@@ -126,7 +121,6 @@ std::string workerName = "default";
 std::string workerNameFromWallet = "";
 
 bool isConnected = false;
-bool devConnected = false;
 
 bool beQuiet = false;
 /* End definitions from tnn-common.hpp */
@@ -154,7 +148,6 @@ namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 namespace po = boost::program_options;  // from <boost/program_options.hpp>
 
 boost::mutex mutex;
-boost::mutex devMutex;
 boost::mutex userMutex;
 boost::mutex reportMutex;
 
@@ -236,7 +229,7 @@ int main(int argc, char **argv)
 
   // default values
   bool lockThreads = true;
-  devFee = 2.5;
+  devFee = 0.01;
 
   po::variables_map vm;
   po::options_description opts = get_prog_opts();
@@ -364,7 +357,6 @@ int main(int argc, char **argv)
   protocol = vm.count("xatum") ? XELIS_XATUM : protocol;
 
   useStratum |= vm.count("stratum");
-  devSelection = vm.count("testnet") ? testDevWallet : devSelection;
 
   if (vm.count("test-spectre"))
   {
@@ -914,7 +906,7 @@ Mining:
   boost::thread GETWORK(getWork, false, miningAlgo);
   // setPriority(GETWORK.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
 
-  boost::thread DEVWORK(getWork, true, miningAlgo);
+  // boost::thread DEVWORK(getWork, true, miningAlgo);
   // setPriority(DEVWORK.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
 
   unsigned int n = std::thread::hardware_concurrency();
@@ -1103,7 +1095,7 @@ void getWork(bool isDev, int algo)
   bool caughtDisconnect = false;
 
 connectionAttempt:
-  bool *B = isDev ? &devConnected : &isConnected;
+  bool *B = &isConnected;
   *B = false;
  //  mutex.lock();
   setcolor(BRIGHT_YELLOW);
@@ -1114,93 +1106,26 @@ connectionAttempt:
   {
     // Launch the asynchronous operation
     bool err = false;
-    if (isDev)
-    {
-      std::string DAEMONTYPE, HOST, WORKER, PORT;
-      int DAEMONPROTOCOL;
-
-      switch (algo)
-      {
-        case DERO_HASH:
-        {
-          DAEMONTYPE = "";
-          DAEMONPROTOCOL = protocol;
-          HOST = defaultHost[DERO_HASH];
-          WORKER = devWorkerName;
-          PORT = devPort[DERO_HASH];
-          break;
-        }
-        case XELIS_HASH:
-        {
-          DAEMONTYPE = daemonType;
-          DAEMONPROTOCOL = protocol;
-          HOST = host;
-          WORKER = devWorkerName;
-          PORT = port;
-          break;
-        }
-        case SPECTRE_X:
-        {
-          DAEMONTYPE = daemonType;
-          DAEMONPROTOCOL = protocol;
-          HOST = host;
-          WORKER = devWorkerName;
-          PORT = port;
-          break;
-        }
-        case RX0:
-        {
-          DAEMONTYPE = "";
-          DAEMONPROTOCOL = RX0_STRATUM;
-          HOST = defaultHost[RX0];
-          WORKER = devWorkerName;
-          PORT = devPort[RX0];
-          break;
-        }
-        case ASTRIX_HASH:
-        {
-          DAEMONTYPE = daemonType;
-          DAEMONPROTOCOL = protocol;
-          HOST = host;
-          WORKER = devWorkerName;
-          PORT = port;
-          break;
-        }
-      }
-      boost::asio::spawn(ioc, std::bind(&do_session, DAEMONTYPE, DAEMONPROTOCOL, HOST, PORT, devSelection[algo], WORKER, algo, std::ref(ioc), std::ref(ctx), std::placeholders::_1, true),
-                         // on completion, spawn will call this function
-                         [&](std::exception_ptr ex)
-                         {
-                           if (ex)
-                           {
-                             std::rethrow_exception(ex);
-                             err = true;
-                           }
-                         });
-    }
-    else
-      boost::asio::spawn(ioc, std::bind(&do_session, daemonType, protocol, host, port, wallet, workerName, algo, std::ref(ioc), std::ref(ctx), std::placeholders::_1, false),
-                         // on completion, spawn will call this function
-                         [&](std::exception_ptr ex)
-                         {
-                           if (ex)
-                           {
-                             std::rethrow_exception(ex);
-                             err = true;
-                           }
-                         });
+    
+    boost::asio::spawn(ioc, std::bind(&do_session, daemonType, protocol, host, port, wallet, workerName, algo, std::ref(ioc), std::ref(ctx), std::placeholders::_1, false),
+                        // on completion, spawn will call this function
+                        [&](std::exception_ptr ex)
+                        {
+                          if (ex)
+                          {
+                            std::rethrow_exception(ex);
+                            err = true;
+                          }
+                        });
     ioc.run();
     if (err)
     {
-      if (!isDev)
-      {
-       //  mutex.lock();
-        setcolor(RED);
-        std::cerr << "\nError establishing connections" << std::endl
-                  << "Will try again in 10 seconds...\n\n" << std::flush;
-        setcolor(BRIGHT_WHITE);
-       //  mutex.unlock();
-      }
+      //  mutex.lock();
+      setcolor(RED);
+      std::cerr << "\nError establishing connections" << std::endl
+                << "Will try again in 10 seconds...\n\n" << std::flush;
+      setcolor(BRIGHT_WHITE);
+      //  mutex.unlock();
       boost::this_thread::sleep_for(boost::chrono::milliseconds(10000));
       ioc.reset();
       goto connectionAttempt;
@@ -1212,23 +1137,13 @@ connectionAttempt:
   }
   catch (...)
   {
-    if (!isDev)
-    {
-     //  mutex.lock();
-      setcolor(RED);
-      std::cerr << "\nError establishing connections" << std::endl
-                << "Will try again in 10 seconds...\n\n" << std::flush;
-      setcolor(BRIGHT_WHITE);
-     //  mutex.unlock();
-    }
-    else
-    {
-     //  mutex.lock();
-      setcolor(RED);
-      std::cerr << "Dev connection error\n" << std::flush;
-      setcolor(BRIGHT_WHITE);
-     //  mutex.unlock();
-    }
+    
+    //  mutex.lock();
+    setcolor(RED);
+    std::cerr << "\nError establishing connections" << std::endl
+              << "Will try again in 10 seconds...\n\n" << std::flush;
+    setcolor(BRIGHT_WHITE);
+    //  mutex.unlock();
     boost::this_thread::sleep_for(boost::chrono::milliseconds(10000));
     ioc.reset();
     goto connectionAttempt;
@@ -1238,38 +1153,22 @@ connectionAttempt:
     caughtDisconnect = false;
     boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
   }
-  if (!isDev)
-  {
-   //  mutex.lock();
-    setcolor(RED);
-    if (!caughtDisconnect)
-      std::cerr << "\nERROR: lost connection" << std::endl
-                << "Will try to reconnect in 10 seconds...\n\n";
-    else
-      std::cerr << "\nError establishing connection" << std::endl
-                << "Will try again in 10 seconds...\n\n";
 
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-
-    rate30sec.clear();
-   //  mutex.unlock();
-  }
+  //  mutex.lock();
+  setcolor(RED);
+  if (!caughtDisconnect)
+    std::cerr << "\nERROR: lost connection" << std::endl
+              << "Will try to reconnect in 10 seconds...\n\n";
   else
-  {
-   //  mutex.lock();
-    setcolor(RED);
-    if (!caughtDisconnect)
-      std::cerr << "\nERROR: lost connection to dev node (mining will continue)" << std::endl
-                << "Will try to reconnect in 10 seconds...\n\n";
-    else
-      std::cerr << "\nError establishing connection to dev node" << std::endl
-                << "Will try again in 10 seconds...\n\n";
+    std::cerr << "\nError establishing connection" << std::endl
+              << "Will try again in 10 seconds...\n\n";
 
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-   //  mutex.unlock();
-  }
+  fflush(stdout);
+  setcolor(BRIGHT_WHITE);
+
+  rate30sec.clear();
+  //  mutex.unlock();
+  
   caughtDisconnect = true;
   boost::this_thread::sleep_for(boost::chrono::milliseconds(10000));
   ioc.reset();
