@@ -44,114 +44,38 @@ int threads = 0;
 int testOp = -1;
 int testLen = -1;
 int processPriority = 0;
-bool gpuMine = false;
 bool broadcastStats = false;
 bool checkWallet = true;
 
 int tuneWarmupSec;
 int tuneDurationSec;
 
-int cudaMemNumerator = 1000;
-int cudaMemDenominator = 750; //Kilobytes per worker in VRAM
+std::string defaultHost = "127.0.0.1";
 
-std::string defaultHost[] = {
-  "dero-node-sk.mysrv.cloud",
-  "127.0.0.1", // xel
-  "127.0.0.1",
-  "127.0.0.1", // spr
-  "monerohash.com", // rx0
-  "monerohash.com",
-  "monerohash.com",
-  "monerohash.com",
-  "monerohash.com",
-  "monerohash.com",
-  "monerohash.com",
-  "", // verus
-  "",
-  "127.0.0.1" // aix
-};
+std::string devPort = "5555";
 
-std::string devPort[] = {
-  "10300", // dero
-  "8080", // xel
-  "8080",
-  "5555", // spr
-  "2222", // rx0
-  "2222",
-  "2222",
-  "2222",
-  "2222",
-  "2222",
-  "2222",
-  "", // verus
-  "",
-  "5555" // aix
-};
-// @ tritonn on Dero Name Service
-std::string devWallet[] = {
-  "dero1qy5ewgqk8cw8drjhrcr0lpdcm26edqcwdwjke4x67m08nwd2hw4wjqqp6y2n7",
-  "xel:xz9574c80c4xegnvurazpmxhw5dlg2n0g9qm60uwgt75uqyx3pcsqzzra9m",
-  "xel:xz9574c80c4xegnvurazpmxhw5dlg2n0g9qm60uwgt75uqyx3pcsqzzra9m",
+std::string devWallet =
 #if defined(__x86_64__)
-  "spectre:qr5l7q4s6mrfs9r7n0l090nhxrjdkxwacyxgk8lt2wt57ka6xr0ucvr0cmgnf",
+  "spectre:qr5l7q4s6mrfs9r7n0l090nhxrjdkxwacyxgk8lt2wt57ka6xr0ucvr0cmgnf";
 #else
-  "spectre:qqty6rrlsxwzcwdx7ge60256cw7r2adu7c8nqtsqxjmkt2c83h3kss3uqeay0",
+  "spectre:qqty6rrlsxwzcwdx7ge60256cw7r2adu7c8nqtsqxjmkt2c83h3kss3uqeay0";
 #endif
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "", //verus
-  "", //verus
-  "astrix:qz2mzpga6qv9uvnpueau7gs29vgu3ynj80xmd2dmja2kelzh6cssymsk3shjx"
-};
 
-std::string testDevWallet[] = {
-  "dero1qy5ewgqk8cw8drjhrcr0lpdcm26edqcwdwjke4x67m08nwd2hw4wjqqp6y2n7",
-  "xet:5zwxjesmz6gtpg3c6zt20n9nevsyeewavpx6nwmv08z2hu2dpp3sq8w8ue6",
-  "xet:5zwxjesmz6gtpg3c6zt20n9nevsyeewavpx6nwmv08z2hu2dpp3sq8w8ue6",
-  "spectredev:qqhh8ul66g7t6aj5ggzl473cpan25tv6yjm0cl4hffprgtqfvmyaq8q28m4z8",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "49FCeAUYsPHYV3QLSKzQEpTgmKjHGYMzv2LMs4K7hprWK5FZNS31puWTsSxZo1rQTtVDw9Bi4YhRJYNyMc66zBuMMUhYJqe",
-  "", //verus
-  "", //verus
-  "astrix:qz2mzpga6qv9uvnpueau7gs29vgu3ynj80xmd2dmja2kelzh6cssymsk3shjx"
-};
+std::string testDevWallet = "spectredev:qqhh8ul66g7t6aj5ggzl473cpan25tv6yjm0cl4hffprgtqfvmyaq8q28m4z8";
 
-std::string *devSelection = devWallet;
+std::string devSelection = devWallet;
 
 std::unordered_map<std::string, int> coinSelector = {
-  {"dero", DERO_HASH},
-  {"DERO", DERO_HASH},
-  {"xel", XELIS_HASH},
-  {"XEL", XELIS_HASH},
   {"spr", SPECTRE_X},
-  {"SPR", SPECTRE_X},
-  {"rx0", RX0},
-  {"xmr", RX0},
-  {"XMR", RX0},
-  {"sal", RX0},
-  {"SAL", RX0},
-  {"zeph", RX0},
-  {"ZEPH", RX0},
-  {"aix", ASTRIX_HASH},
-  {"AIX", ASTRIX_HASH}
+  {"SPR", SPECTRE_X}
 };
 
-void getWork(bool isDev, int algo);
-void sendWork();
-void devWork();
+extern uint64_t nonce0;
 
-void mine(int tid, int algo = DERO_HASH);
-void cudaMine();
+void getWork(int algo);
+void sendWork();
+
+void mine(int tid, int algo = SPECTRE_X);
 
 void benchmark(int i);
 void logSeconds(std::chrono::steady_clock::time_point start_time, int duration, bool *stop);
@@ -183,10 +107,6 @@ inline Num ConvertDifficultyToBig(int64_t d, int algo)
 {
   Num difficulty = Num(std::to_string(d).c_str(), 10);
   switch(algo) {
-    case DERO_HASH:
-      return oneLsh256 / difficulty;
-    case XELIS_HASH:
-      return maxU256 / difficulty;
     case SPECTRE_X:
       return (oneLsh256-1) / difficulty;
     default:

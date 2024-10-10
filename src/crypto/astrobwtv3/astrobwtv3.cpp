@@ -838,10 +838,10 @@ void branchComputeCPU(workerData &worker, bool isTest, int wIndex)
 
     } else {
       worker.tries[wIndex]++;
-      if (debugOpOrder) printf("t: 0x%hx p: 0x%lx l: 0x%lx\n", worker.tries[wIndex], worker.prev_lhash, worker.lhash);
+      if (debugOpOrder) printf("t: 0x%hx p: 0x%llx l: 0x%llx\n", worker.tries[wIndex], worker.prev_lhash, worker.lhash);
       worker.random_switcher = worker.prev_lhash ^ worker.lhash ^ worker.tries[wIndex];
       // __builtin_prefetch(&worker.random_switcher,0,3);
-      // printf("%d worker.random_switcher %d %08jx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
+      // printf("%d worker.random_switcher %d %08llx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
 
       worker.op = static_cast<byte>(worker.random_switcher);
       //if (debugOpOrder) worker.opsA.push_back(worker.op);
@@ -4007,7 +4007,7 @@ void branchComputeCPU(workerData &worker, bool isTest, int wIndex)
       __builtin_prefetch(worker.chunk, 0, 0);
       worker.prev_lhash = worker.lhash + worker.prev_lhash;
       worker.lhash = XXHash64::hash(worker.chunk, worker.pos2, 0);
-      // if (debugOpOrder) printf("A: new worker.lhash: %08jx\n", worker.lhash);
+      // if (debugOpOrder) printf("A: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x20)
@@ -4016,7 +4016,7 @@ void branchComputeCPU(workerData &worker, bool isTest, int wIndex)
       __builtin_prefetch(worker.chunk, 0, 0);
       worker.prev_lhash = worker.lhash + worker.prev_lhash;
       worker.lhash = hash_64_fnv1a(worker.chunk, worker.pos2);
-      // if (debugOpOrder) printf("B: new worker.lhash: %08jx\n", worker.lhash);
+      // if (debugOpOrder) printf("B: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x30)
@@ -4028,7 +4028,7 @@ void branchComputeCPU(workerData &worker, bool isTest, int wIndex)
       HH_ALIGNAS(16)
       const highwayhash::HH_U64 key2[2] = {worker.tries[wIndex], worker.prev_lhash};
       worker.lhash = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
-      // if (debugOpOrder) printf("C: new worker.lhash: %08jx\n", worker.lhash);
+      // if (debugOpOrder) printf("C: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A <= 0x40)
@@ -4135,7 +4135,7 @@ void branchComputeCPU_avx2(workerData &worker, bool isTest, int wIndex)
       worker.tries[wIndex]++;
       worker.random_switcher = worker.prev_lhash ^ worker.lhash ^ worker.tries[wIndex];
       // __builtin_prefetch(&worker.random_switcher,0,3);
-      // printf("%d worker.random_switcher %d %08jx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
+      // printf("%d worker.random_switcher %d %08llx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
 
       worker.op = static_cast<byte>(worker.random_switcher);
       // if (debugOpOrder) worker.opsA.push_back(worker.op);
@@ -7836,7 +7836,7 @@ void branchComputeCPU_avx2(workerData &worker, bool isTest, int wIndex)
       worker.lhash = XXHash64::hash(worker.chunk, worker.pos2, 0);
 
       // uint64_t test = XXHash64::hash(worker.chunk, worker.pos2, 0);
-      if (worker.op == sus_op && debugOpOrder) printf("SIMD: A: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder) printf("SIMD: A: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x20)
@@ -7845,7 +7845,7 @@ void branchComputeCPU_avx2(workerData &worker, bool isTest, int wIndex)
       worker.lhash = hash_64_fnv1a(worker.chunk, worker.pos2);
 
       // uint64_t test = hash_64_fnv1a(worker.chunk, worker.pos2);
-      if (worker.op == sus_op && debugOpOrder) printf("SIMD: B: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder) printf("SIMD: B: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x30)
@@ -7856,7 +7856,7 @@ void branchComputeCPU_avx2(workerData &worker, bool isTest, int wIndex)
       worker.lhash = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
 
       // uint64_t test = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
-      if (worker.op == sus_op && debugOpOrder) printf("SIMD: C: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder) printf("SIMD: C: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A <= 0x40)
@@ -7976,7 +7976,7 @@ void branchComputeCPU_avx2_zOptimized(workerData &worker, bool isTest, int wInde
       worker.tries[wIndex]++;
       worker.random_switcher = worker.prev_lhash ^ worker.lhash ^ worker.tries[wIndex];
       // __builtin_prefetch(&worker.random_switcher,0,3);
-      // printf("%d worker.random_switcher %d %08jx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
+      // printf("%d worker.random_switcher %d %08llx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
 
       prevOp = worker.op;
       worker.op = static_cast<byte>(worker.random_switcher);
@@ -8122,7 +8122,7 @@ void branchComputeCPU_avx2_zOptimized(workerData &worker, bool isTest, int wInde
       worker.lhash = XXHash64::hash(worker.chunk, worker.pos2, 0);
 
       // uint64_t test = XXHash64::hash(worker.chunk, worker.pos2, 0);
-      if (worker.op == sus_op && debugOpOrder) printf("SIMD: A: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder) printf("SIMD: A: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x20)
@@ -8131,7 +8131,7 @@ void branchComputeCPU_avx2_zOptimized(workerData &worker, bool isTest, int wInde
       worker.lhash = hash_64_fnv1a(worker.chunk, worker.pos2);
 
       // uint64_t test = hash_64_fnv1a(worker.chunk, worker.pos2);
-      if (worker.op == sus_op && debugOpOrder) printf("SIMD: B: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder) printf("SIMD: B: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x30)
@@ -8142,7 +8142,7 @@ void branchComputeCPU_avx2_zOptimized(workerData &worker, bool isTest, int wInde
       worker.lhash = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
 
       // uint64_t test = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
-      if (worker.op == sus_op && debugOpOrder) printf("SIMD: C: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder) printf("SIMD: C: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A <= 0x40)
@@ -8351,7 +8351,7 @@ void wolfCompute(workerData &worker, bool isTest, int wIndex)
       worker.tries[wIndex]++;
       worker.random_switcher = worker.prev_lhash ^ worker.lhash ^ worker.tries[wIndex];
       // __builtin_prefetch(&worker.random_switcher,0,3);
-      // printf("%d worker.random_switcher %d %08jx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
+      // printf("%d worker.random_switcher %d %08llx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
 
       prevOp = worker.op;
       worker.op = static_cast<byte>(worker.random_switcher);
@@ -8549,7 +8549,7 @@ after:
       worker.lhash = XXHash64::hash(worker.chunk, worker.pos2, 0);
 
       // uint64_t test = XXHash64::hash(worker.chunk, worker.pos2, 0);
-      if (worker.op == sus_op && debugOpOrder)  printf("Wolf: A: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder)  printf("Wolf: A: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x20)
@@ -8559,7 +8559,7 @@ after:
       worker.lhash = hash_64_fnv1a(worker.chunk, worker.pos2);
 
       // uint64_t test = hash_64_fnv1a(worker.chunk, worker.pos2);
-      if (worker.op == sus_op && debugOpOrder)  printf("Wolf: B: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder)  printf("Wolf: B: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x30)
@@ -8572,7 +8572,7 @@ after:
       worker.lhash = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
 
       // uint64_t test = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
-      if (worker.op == sus_op && debugOpOrder)  printf("Wolf: C: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder)  printf("Wolf: C: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A <= 0x40)
@@ -8679,7 +8679,7 @@ void lookupCompute(workerData &worker, bool isTest, int wIndex)
     } else {
       worker.tries[wIndex]++;
       worker.random_switcher = worker.prev_lhash ^ worker.lhash ^ worker.tries[wIndex];
-      // printf("%d worker.random_switcher %d %08jx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
+      // printf("%d worker.random_switcher %d %08llx\n", worker.tries[wIndex], worker.random_switcher, worker.random_switcher);
 
       worker.op = static_cast<byte>(worker.random_switcher);
       if (debugOpOrder) worker.opsB.push_back(worker.op);
@@ -8939,7 +8939,7 @@ after:
       worker.lhash = XXHash64::hash(worker.chunk, worker.pos2, 0);
 
       // uint64_t test = XXHash64::hash(worker.chunk, worker.pos2, 0);
-      if (worker.op == sus_op && debugOpOrder)  printf("Lookup: A: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder)  printf("Lookup: A: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x20)
@@ -8949,7 +8949,7 @@ after:
       worker.lhash = hash_64_fnv1a(worker.chunk, worker.pos2);
 
       // uint64_t test = hash_64_fnv1a(worker.chunk, worker.pos2);
-      if (worker.op == sus_op && debugOpOrder)  printf("Lookup: B: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder)  printf("Lookup: B: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A < 0x30)
@@ -8962,7 +8962,7 @@ after:
       worker.lhash = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
 
       // uint64_t test = highwayhash::SipHash(key2, (char*)worker.chunk, worker.pos2); // more deviations
-      if (worker.op == sus_op && debugOpOrder)  printf("Lookup: C: new worker.lhash: %08jx\n", worker.lhash);
+      if (worker.op == sus_op && debugOpOrder)  printf("Lookup: C: new worker.lhash: %08llx\n", worker.lhash);
     }
 
     if (worker.A <= 0x40)

@@ -15,7 +15,6 @@
 
 #include "tnn-common.hpp"
 #include "tnn-hugepages.h"
-#include "gpulibs.h"
 
 #include "rootcert.h"
 #include <DNSResolver.hpp>
@@ -60,10 +59,8 @@ int reportCounter = 0;
 int reportInterval = 3;
 
 uint256_t bigDiff(0);
-uint256_t bigDiff_dev(0);
 
-extern uint64_t nonce0 = 0;
-extern uint64_t nonce0_dev = 0;
+uint64_t nonce0 = 0;
 
 std::string HIP_names[32];
 std::vector<std::atomic<int64_t>> HIP_counters(32);
@@ -90,12 +87,6 @@ std::string daemonType = "";
 std::string host = "NULL";
 std::string wallet = "NULL";
 
-// Dev fee config
-// Dev fee is a % of hashrate
-int batchSize = 5000;
-double minFee = 1.0;
-double devFee = 2.5;
-
 int jobCounter;
 
 int blockCounter;
@@ -108,13 +99,10 @@ int accepted;
 
 //uint64_t hashrate;
 int64_t ourHeight;
-int64_t devHeight;
 
 int64_t difficulty;
-int64_t difficultyDev;
 
 double doubleDiff;
-double doubleDiffDev;
 
 bool useLookupMine = false;
 
@@ -126,7 +114,6 @@ std::string workerName = "default";
 std::string workerNameFromWallet = "";
 
 bool isConnected = false;
-bool devConnected = false;
 
 bool beQuiet = false;
 /* End definitions from tnn-common.hpp */
@@ -154,7 +141,6 @@ namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 namespace po = boost::program_options;  // from <boost/program_options.hpp>
 
 boost::mutex mutex;
-boost::mutex devMutex;
 boost::mutex userMutex;
 boost::mutex reportMutex;
 
@@ -210,13 +196,6 @@ void sigint(int signum) {
 
 int main(int argc, char **argv)
 {
-  // test_cshake256();
-
-  GPUTest();
-  #ifdef TNN_HIP
-  return 0;
-  #endif
-
   std::atexit(onExit);
   signal(SIGTERM, sigterm);
   signal(SIGINT, sigint);
@@ -236,7 +215,6 @@ int main(int argc, char **argv)
 
   // default values
   bool lockThreads = true;
-  devFee = 2.5;
 
   po::variables_map vm;
   po::options_description opts = get_prog_opts();
@@ -304,20 +282,7 @@ int main(int argc, char **argv)
     return 1;
     #endif
   }
-
-  if (vm.count("xelis"))
-  {
-    #if defined(TNN_XELISHASH)
-    symbol = "XEL";
-    #else
-    setcolor(RED);
-    printf(unsupported_xelishash);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
-
+  
   if (vm.count("spectre"))
   {
     #if defined(TNN_ASTROBWTV3)
@@ -326,35 +291,6 @@ int main(int argc, char **argv)
     #else
     setcolor(RED);
     printf(unsupported_astro);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
-
-  if (vm.count("astrix"))
-  {
-    #if defined(TNN_ASTRIXHASH)
-    symbol = "AIX";
-    protocol = ASTRIX_STRATUM;
-    #else
-    setcolor(RED);
-    printf(unsupported_astrix);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
-
-  if (vm.count("randomx"))
-  {
-    fflush(stdout);
-    #if defined(TNN_RANDOMX)
-    symbol = "rx0";
-    protocol = RX0_SOLO; // Solo minin unsupported for now, so default to stratum instead
-    #else
-    setcolor(RED);
-    printf(unsupported_randomx);
     fflush(stdout);
     setcolor(BRIGHT_WHITE);
     return 1;
@@ -373,64 +309,6 @@ int main(int argc, char **argv)
     #else
     setcolor(RED);
     printf(unsupported_astro);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
-
-  if (vm.count("test-xelis"))
-  {
-    #if defined(TNN_XELISHASH)
-    int rc = xelis_runTests_v2();
-    return rc;
-    #else
-    setcolor(RED);
-    printf(unsupported_xelishash);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
-
-  if (vm.count("test-randomx"))
-  {
-    #if defined(TNN_RANDOMX)
-    RandomXTest();
-    rxRPCTest();
-    return 0;
-    #else
-    setcolor(RED);
-    printf(unsupported_randomx);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
-
-  if (vm.count("test-astrix"))
-  {
-    #if defined(TNN_RANDOMX)
-    return AstrixHash::test();
-    #else
-    setcolor(RED);
-    printf(unsupported_astrix);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
-
-  if (vm.count("xelis-bench"))
-  {
-    #if defined(TNN_XELISHASH)
-    boost::thread t(xelis_benchmark_cpu_hash_v2);
-    setPriority(t.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
-    t.join();
-    return 0;
-    #else
-    setcolor(RED);
-    printf(unsupported_xelishash);
     fflush(stdout);
     setcolor(BRIGHT_WHITE);
     return 1;
@@ -496,23 +374,9 @@ int main(int argc, char **argv)
   if (vm.count("wallet"))
   {
     wallet = vm["wallet"].as<std::string>();
-    if(wallet.find("dero", 0) != std::string::npos) {
-      symbol = "DERO";
-    }
-    if(wallet.find("xel:", 0) != std::string::npos || wallet.find("xet:", 0) != std::string::npos) {
-      symbol = "XEL";
-    }
     if(wallet.find("spectre", 0) != std::string::npos) {
       symbol = "SPR";
       protocol = SPECTRE_STRATUM;
-    }
-    if(wallet.find("astrix", 0) != std::string::npos) {
-      symbol = "AIX";
-      protocol = ASTRIX_STRATUM;
-    }
-    if(wallet.find("ZEPHYR", 0) != std::string::npos) {
-      symbol = "ZEPH";
-      protocol = RX0_SOLO;
     }
 
     boost::char_separator<char> sep(".");
@@ -550,26 +414,11 @@ int main(int argc, char **argv)
   }
   if (vm.count("dev-fee"))
   {
-    try
-    {
-      devFee = vm["dev-fee"].as<double>();
-      if (devFee < minFee)
-      {
-        setcolor(RED);
-        printf("ERROR: dev fee must be at least %.2f", minFee);
-        fflush(stdout);
-
-        setcolor(BRIGHT_WHITE);
-        boost::this_thread::sleep_for(boost::chrono::seconds(1));
-        return 1;
-      }
-    }
-    catch (...)
-    {
-      printf("ERROR: invalid dev fee parameter... format should be for example '1.0'");
-      boost::this_thread::sleep_for(boost::chrono::seconds(1));
-      return 1;
-    }
+    setcolor(GREEN);
+    printf("CONGRATS:\n         [-_-] This miner is dev-fee free. So ignoring your request. [-_-]\n\n");
+    fflush(stdout);
+    setcolor(BRIGHT_WHITE);
+    boost::this_thread::sleep_for(boost::chrono::seconds(1));
   }
   if (vm.count("no-lock"))
   {
@@ -579,19 +428,10 @@ int main(int argc, char **argv)
     setcolor(BRIGHT_WHITE);
     lockThreads = false;
   }
-  if (vm.count("gpu"))
-  {
-    gpuMine = true;
-  }
 
   if (vm.count("broadcast"))
   {
     broadcastStats = true;
-  }
-  // GPU-specific
-  if (vm.count("batch-size"))
-  {
-    batchSize = vm["batch-size"].as<int>();
   }
 
   // Test-specific
@@ -661,9 +501,9 @@ fillBlanks:
     }
     else
     {
-      symbol = "DERO";
+      symbol = "SPR";
       setcolor(BRIGHT_YELLOW);
-      printf("Default value will be used: %s\n\n", "DERO");
+      printf("Default value will be used: %s\n\n", "SPR");
       fflush(stdout);
       setcolor(BRIGHT_WHITE);
     }
@@ -698,7 +538,7 @@ fillBlanks:
 
   int i = 0;
   std::vector<std::string *> stringParams = {&host, &port, &wallet};
-  std::vector<const char *> stringDefaults = {defaultHost[miningAlgo].c_str(), devPort[miningAlgo].c_str(), devSelection[miningAlgo].c_str()};
+  std::vector<const char *> stringDefaults = {defaultHost.c_str(), devPort.c_str(), devSelection.c_str()};
   std::vector<const char *> stringPrompts = {daemonPrompt, portPrompt, walletPrompt};
   for (std::string *param : stringParams)
   {
@@ -762,14 +602,8 @@ fillBlanks:
   {
     switch (miningAlgo)
     {
-      case XELIS_HASH:
-        protocol = XELIS_STRATUM;
-        break;
       case SPECTRE_X:
         protocol = SPECTRE_STRATUM;
-        break;
-      case RX0:
-        protocol = RX0_STRATUM;
         break;
     }
   }
@@ -803,160 +637,36 @@ fillBlanks:
   printf("\n");
 }
 
-  goto Mining;
-
-// Benchmarking:
-// {
-//   if (threads <= 0)
-//   {
-//     threads = 1;
-//   }
-
-//   unsigned int n = std::thread::hardware_concurrency();
-//   int winMask = 0;
-//   for (int i = 0; i < n - 1; i++)
-//   {
-//     winMask += 1 << i;
-//   }
-
-//   host = defaultHost[miningAlgo];
-//   port = devPort[miningAlgo];
-//   wallet = devSelection[miningAlgo];
-
-//   boost::thread GETWORK(getWork, false, miningAlgo);
-//   // setPriority(GETWORK.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
-
-//   winMask = std::max(1, winMask);
-
-//   // Create worker threads and set CPU affinity
-//   for (int i = 0; i < threads; i++)
-//   {
-//     boost::thread t(benchmark, i + 1);
-
-//     if (lockThreads)
-//     {
-//       setAffinity(t.native_handle(), (i % n));
-//     }
-
-//     // setPriority(t.native_handle(), THREAD_PRIORITY_HIGHEST);
-
-//    //  mutex.lock();
-//     std::cout << "(Benchmark) Worker " << i + 1 << " created" << std::endl;
-//    //  mutex.unlock();
-//   }
-
-//   while (!isConnected)
-//   {
-//     boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-//   }
-//   auto start_time = std::chrono::steady_clock::now();
-//   startBenchmark = true;
-
-//   boost::thread t2(logSeconds, start_time, bench_duration, &stopBenchmark);
-//   setPriority(t2.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
-
-//   while (true)
-//   {
-//     auto now = std::chrono::steady_clock::now();
-//     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
-//     if (milliseconds >= bench_duration * 1000)
-//     {
-//       stopBenchmark = true;
-//       break;
-//     }
-//     boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
-//   }
-
-//   auto now = std::chrono::steady_clock::now();
-//   auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();
-//   int64_t hashrate = counter / bench_duration;
-//   std::cout << "Mined for " << seconds << " seconds, average rate of " << std::flush;
-
-//   std::string rateSuffix = " H/s";
-//   double rate = (double)hashrate;
-//   if (hashrate >= 1000000)
-//   {
-//     rate = (double)(hashrate / 1000000.0);
-//     rateSuffix = " MH/s";
-//   }
-//   else if (hashrate >= 1000)
-//   {
-//     rate = (double)(hashrate / 1000.0);
-//     rateSuffix = " KH/s";
-//   }
-//   std::cout << std::setprecision(3) << rate << rateSuffix << std::endl;
-//   boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-//   return 0;
-// }
-
 Mining:
 {
- //  mutex.lock();
-  #ifndef TNN_HIP
-    printSupported();
-  #endif
- //  mutex.unlock();1
-
-  if (miningAlgo == DERO_HASH && (wallet.find("der", 0) == std::string::npos && wallet.find("det", 0) == std::string::npos))
-  {
-    std::cout << "Provided wallet address is not valid for Dero" << std::endl;
-    return EXIT_FAILURE;
-  }
-  if (miningAlgo == XELIS_HASH && (wallet.find("xel", 0) == std::string::npos && wallet.find("xet") == std::string::npos && wallet.find("Kr", 0) == std::string::npos))
-  {
-    std::cout << "Provided wallet address is not valid for Xelis" << std::endl;
-    return EXIT_FAILURE;
-  }
   if (miningAlgo == SPECTRE_X && (wallet.find("spectre", 0) == std::string::npos)) {
     std::cout << "Provided wallet address is not valid for Spectre" << std::endl;
     return EXIT_FAILURE;
   }
-  boost::thread GETWORK(getWork, false, miningAlgo);
+  boost::thread GETWORK(getWork, miningAlgo);
   // setPriority(GETWORK.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
-
-  boost::thread DEVWORK(getWork, true, miningAlgo);
-  // setPriority(DEVWORK.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
 
   unsigned int n = std::thread::hardware_concurrency();
 
-  #ifdef TNN_RANDOMX
 
-  if (miningAlgo == RX0) {
-    rx_hugePages = vm.count("rx-hugepages");
-    randomx_set_flags(true);
-    fflush(stdout);
-    randomx_init_intern(n);
-  }
-  #endif
-
-  // Create worker threads and set CPU affinity
- //  mutex.lock();
-  if (false /*gpuMine*/)
+  std::cout << "Starting threads: ";
+  for (int i = 0; i < threads; i++)
   {
-    // boost::thread t(cudaMine);
-    // setPriority(t.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
-    // continue;
-  }
-  else
-    std::cout << "Starting threads: ";
-    for (int i = 0; i < threads; i++)
+
+    boost::thread t(POW[miningAlgo], i + 1);
+
+    if (lockThreads)
     {
-
-      boost::thread t(POW[miningAlgo], i + 1);
-
-      if (lockThreads)
-      {
-        setAffinity(t.native_handle(), i);
-      }
-      // if (threads == 1 || (n > 2 && i <= n - 2))
-      // setPriority(t.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
-
-      std::cout << i + 1;
-      if(i+1 != threads)
-        std::cout << ", ";
+      setAffinity(t.native_handle(), i);
     }
-    std::cout << std::endl;
- //  mutex.unlock();
+    // if (threads == 1 || (n > 2 && i <= n - 2))
+    // setPriority(t.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
+
+    std::cout << i + 1;
+    if(i+1 != threads)
+      std::cout << ", ";
+  }
+  std::cout << std::endl;
 
   g_start_time = std::chrono::steady_clock::now();
   if (broadcastStats)
@@ -970,12 +680,12 @@ Mining:
   }
 
   // boost::thread reportThread([&]() {
-    // Set an expiry time relative to now.
-    update_timer.expires_after(std::chrono::seconds(1));
+  // Set an expiry time relative to now.
+  update_timer.expires_after(std::chrono::seconds(1));
 
-    // Start an asynchronous wait.
-    update_timer.async_wait(update_handler);
-    my_context.run();
+  // Start an asynchronous wait.
+  update_timer.async_wait(update_handler);
+  my_context.run();
   // });
   // setPriority(reportThread.native_handle(), THREAD_PRIORITY_TIME_CRITICAL);
 
@@ -1094,7 +804,7 @@ void setPriority(boost::thread::native_handle_type t, int priority)
 #endif
 }
 
-void getWork(bool isDev, int algo)
+void getWork(int algo)
 {
   net::io_context ioc;
   ssl::context ctx = ssl::context{ssl::context::tlsv12_client};
@@ -1103,104 +813,36 @@ void getWork(bool isDev, int algo)
   bool caughtDisconnect = false;
 
 connectionAttempt:
-  bool *B = isDev ? &devConnected : &isConnected;
+  bool *B = &isConnected;
   *B = false;
- //  mutex.lock();
+  //  mutex.lock();
   setcolor(BRIGHT_YELLOW);
   std::cout << "Connecting...\n" << std::flush;
   setcolor(BRIGHT_WHITE);
- //  mutex.unlock();
+  //  mutex.unlock();
   try
   {
     // Launch the asynchronous operation
     bool err = false;
-    if (isDev)
-    {
-      std::string DAEMONTYPE, HOST, WORKER, PORT;
-      int DAEMONPROTOCOL;
-
-      switch (algo)
-      {
-        case DERO_HASH:
-        {
-          DAEMONTYPE = "";
-          DAEMONPROTOCOL = protocol;
-          HOST = defaultHost[DERO_HASH];
-          WORKER = devWorkerName;
-          PORT = devPort[DERO_HASH];
-          break;
-        }
-        case XELIS_HASH:
-        {
-          DAEMONTYPE = daemonType;
-          DAEMONPROTOCOL = protocol;
-          HOST = host;
-          WORKER = devWorkerName;
-          PORT = port;
-          break;
-        }
-        case SPECTRE_X:
-        {
-          DAEMONTYPE = daemonType;
-          DAEMONPROTOCOL = protocol;
-          HOST = host;
-          WORKER = devWorkerName;
-          PORT = port;
-          break;
-        }
-        case RX0:
-        {
-          DAEMONTYPE = "";
-          DAEMONPROTOCOL = RX0_STRATUM;
-          HOST = defaultHost[RX0];
-          WORKER = devWorkerName;
-          PORT = devPort[RX0];
-          break;
-        }
-        case ASTRIX_HASH:
-        {
-          DAEMONTYPE = daemonType;
-          DAEMONPROTOCOL = protocol;
-          HOST = host;
-          WORKER = devWorkerName;
-          PORT = port;
-          break;
-        }
-      }
-      boost::asio::spawn(ioc, std::bind(&do_session, DAEMONTYPE, DAEMONPROTOCOL, HOST, PORT, devSelection[algo], WORKER, algo, std::ref(ioc), std::ref(ctx), std::placeholders::_1, true),
-                         // on completion, spawn will call this function
-                         [&](std::exception_ptr ex)
-                         {
-                           if (ex)
-                           {
-                             std::rethrow_exception(ex);
-                             err = true;
-                           }
-                         });
-    }
-    else
-      boost::asio::spawn(ioc, std::bind(&do_session, daemonType, protocol, host, port, wallet, workerName, algo, std::ref(ioc), std::ref(ctx), std::placeholders::_1, false),
-                         // on completion, spawn will call this function
-                         [&](std::exception_ptr ex)
-                         {
-                           if (ex)
-                           {
-                             std::rethrow_exception(ex);
-                             err = true;
-                           }
-                         });
+    boost::asio::spawn(ioc, std::bind(&do_session, daemonType, protocol, host, port, wallet, workerName, algo, std::ref(ioc), std::ref(ctx), std::placeholders::_1),
+                        // on completion, spawn will call this function
+                        [&](std::exception_ptr ex)
+                        {
+                          if (ex)
+                          {
+                            std::rethrow_exception(ex);
+                            err = true;
+                          }
+                        });
     ioc.run();
     if (err)
     {
-      if (!isDev)
-      {
-       //  mutex.lock();
-        setcolor(RED);
-        std::cerr << "\nError establishing connections" << std::endl
-                  << "Will try again in 10 seconds...\n\n" << std::flush;
-        setcolor(BRIGHT_WHITE);
-       //  mutex.unlock();
-      }
+      //  mutex.lock();
+      setcolor(RED);
+      std::cerr << "\nError establishing connections" << std::endl
+                << "Will try again in 10 seconds...\n\n" << std::flush;
+      setcolor(BRIGHT_WHITE);
+      //  mutex.unlock();
       boost::this_thread::sleep_for(boost::chrono::milliseconds(10000));
       ioc.reset();
       goto connectionAttempt;
@@ -1212,23 +854,12 @@ connectionAttempt:
   }
   catch (...)
   {
-    if (!isDev)
-    {
-     //  mutex.lock();
-      setcolor(RED);
-      std::cerr << "\nError establishing connections" << std::endl
-                << "Will try again in 10 seconds...\n\n" << std::flush;
-      setcolor(BRIGHT_WHITE);
-     //  mutex.unlock();
-    }
-    else
-    {
-     //  mutex.lock();
-      setcolor(RED);
-      std::cerr << "Dev connection error\n" << std::flush;
-      setcolor(BRIGHT_WHITE);
-     //  mutex.unlock();
-    }
+    //  mutex.lock();
+    setcolor(RED);
+    std::cerr << "\nError establishing connections" << std::endl
+              << "Will try again in 10 seconds...\n\n" << std::flush;
+    setcolor(BRIGHT_WHITE);
+    //  mutex.unlock();
     boost::this_thread::sleep_for(boost::chrono::milliseconds(10000));
     ioc.reset();
     goto connectionAttempt;
@@ -1238,38 +869,20 @@ connectionAttempt:
     caughtDisconnect = false;
     boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
   }
-  if (!isDev)
-  {
-   //  mutex.lock();
-    setcolor(RED);
-    if (!caughtDisconnect)
-      std::cerr << "\nERROR: lost connection" << std::endl
-                << "Will try to reconnect in 10 seconds...\n\n";
-    else
-      std::cerr << "\nError establishing connection" << std::endl
-                << "Will try again in 10 seconds...\n\n";
-
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-
-    rate30sec.clear();
-   //  mutex.unlock();
-  }
+  //  mutex.lock();
+  setcolor(RED);
+  if (!caughtDisconnect)
+    std::cerr << "\nERROR: lost connection" << std::endl
+              << "Will try to reconnect in 10 seconds...\n\n";
   else
-  {
-   //  mutex.lock();
-    setcolor(RED);
-    if (!caughtDisconnect)
-      std::cerr << "\nERROR: lost connection to dev node (mining will continue)" << std::endl
-                << "Will try to reconnect in 10 seconds...\n\n";
-    else
-      std::cerr << "\nError establishing connection to dev node" << std::endl
-                << "Will try again in 10 seconds...\n\n";
+    std::cerr << "\nError establishing connection" << std::endl
+              << "Will try again in 10 seconds...\n\n";
 
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-   //  mutex.unlock();
-  }
+  fflush(stdout);
+  setcolor(BRIGHT_WHITE);
+
+  rate30sec.clear();
+  //  mutex.unlock();
   caughtDisconnect = true;
   boost::this_thread::sleep_for(boost::chrono::milliseconds(10000));
   ioc.reset();

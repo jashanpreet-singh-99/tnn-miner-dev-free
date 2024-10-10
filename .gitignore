@@ -21,6 +21,9 @@
 **.out
 **.app
 
+# macOS
+.DS_Store
+
 # Directories
 /bin
 /hooks
@@ -37,6 +40,9 @@
 /src/astrobwtv3/build
 /src/astrobwtv3/export
 /lib/astrospsa/
+/cmake-old
+/extern-old
+/src-old
 
 # Xelis rust resources
 /src/xelis-hash/**.rs

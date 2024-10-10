@@ -13,12 +13,10 @@ if (WITH_ASTROBWTV3)
       src/crypto/astrobwtv3/*.c
       src/crypto/spectrex/*.cpp
       src/crypto/spectrex/*.c
-      src/net/dero/*.cpp
       src/net/spectre/*.cpp
     )
     
     list(APPEND astroSources
-      src/coins/mine_dero.cpp
       src/coins/mine_spectre.cpp
     )
 

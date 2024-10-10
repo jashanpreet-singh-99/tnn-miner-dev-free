@@ -14,10 +14,6 @@ extern bool rx_hugePages;
 inline Num ConvertDifficultyToBig(Num d, int algo)
 {
   switch(algo) {
-    case DERO_HASH:
-      return oneLsh256 / d;
-    case XELIS_HASH:
-      return maxU256 / d;
     case SPECTRE_X:
       return oneLsh256 / (d+1);
     default:
@@ -47,38 +43,12 @@ inline std::string uint32ToHex(uint32_t value) {
   return ss.str();
 }
 
-void mineDero(int tid);
-
-void mineXelis(int tid);
-
 void mineSpectre(int tid);
 
-uint32_t rx_targetToDifficulty(const char* target);
-void randomx_init_extern();
-void randomx_init_intern(int threads);
-void randomx_set_flags(bool autoFlags);
 void rxRPCTest();
-void mineRx0(int tid);
-
-void mineVerus(int tid);
-
-void mineAstrix(int tid);
 
 typedef void (*mineFunc)(int);
-const mineFunc POW[] = {
-  mineDero, // 0
-  mineXelis, 
-  mineXelis, 
-  mineSpectre,
-  mineRx0,
-  mineRx0,
-  mineRx0, // 5
-  mineRx0,
-  mineRx0,
-  mineRx0,
-  mineRx0,
-  mineVerus, // 10
-  mineVerus,
-  mineAstrix
+const mineFunc POW[] = { 
+  mineSpectre
 };
 

@@ -424,7 +424,7 @@ int runDeroOpTests(int testOp, int dataLen) {
     if(testWorker->opt[op]) {
       isOpt = '*';
     }
-    printf(" %cOp: %3d - %7ld / %7ld = %7.2f %% - %s | %7ld / %7ld = %7.2f %% - %s\n", isOpt, op, 
+    printf(" %cOp: %3d - %7lld / %7lld = %7.2f %% - %s | %7lld / %7lld = %7.2f %% - %s\n", isOpt, op, 
       controlResult->duration_ns.count(), testResult->duration_ns.count(), percent_speedup, valid ? "true" : "false",
       controlResult->duration_ns.count(), z_testResult->duration_ns.count(), z_percent_speedup, z_valid ? "true" : "false");
     if(!valid) {
@@ -548,7 +548,7 @@ int rakeDeroOpTests(int testOp, int dataLen) {
       if(testWorker->opt[op]) {
         isOpt = '*';
       }
-      // printf("%cOp: %3d - %7ld / %7ld = %6.2f %% - %s\n", isOpt, op, controlResult->duration_ns.count(), testResult->duration_ns.count(), percent_speedup, valid ? "true" : "false");
+      // printf("%cOp: %3d - %7lld / %7lld = %6.2f %% - %s\n", isOpt, op, controlResult->duration_ns.count(), testResult->duration_ns.count(), percent_speedup, valid ? "true" : "false");
       if(!valid) {
         printf("input: %d, op: %d\n", o, op);
         numOpsFailed++;
@@ -3812,7 +3812,7 @@ void optest_ref(int op, workerData &worker, byte testData[32], OpTestResult &tes
     for (int i = worker.pos1; i < worker.pos1 + 32; i++) {
       printf("%02x ", worker.step_3[i]);
     }
-    printf("\n took %ld ns\n---------------\n", time.count());
+    printf("\n took %lld ns\n---------------\n", time.count());
   }
 }
 
@@ -3853,7 +3853,7 @@ void optest_branchcpu(int op, workerData &worker, byte testData[32], OpTestResul
     for (int i = worker.pos1; i < worker.pos1 + 32; i++) {
       printf("%02x ", worker.chunk[i]);
     }
-    printf("\n took %ld ns\n---------------\n", test_time.count());
+    printf("\n took %lld ns\n---------------\n", test_time.count());
   }
   return; 
 }
@@ -3894,7 +3894,7 @@ void optest_lookup(int op, workerData &worker, byte testData[32], OpTestResult &
     for (int i = worker.pos1; i < worker.pos1 + 32; i++) {
       printf("%02x ", worker.chunk[i]);
     }
-    printf("\n took %ld ns\n---------------\n", test_time.count());
+    printf("\n took %lld ns\n---------------\n", test_time.count());
   }
   return; 
 }
@@ -3935,7 +3935,7 @@ void optest_wolf(int op, workerData &worker, byte testData[32], OpTestResult &te
     for (int i = worker.pos1; i < worker.pos1 + 32; i++) {
       printf("%02x ", worker.chunk[i]);
     }
-    printf("\n took %ld ns\n---------------\n", test_time.count());
+    printf("\n took %lld ns\n---------------\n", test_time.count());
   }
   return; 
 }
@@ -3977,7 +3977,7 @@ void optest_avx2(int op, workerData &worker, byte testData[32], OpTestResult &te
     for (int i = worker.pos1; i < worker.pos1 + 32; i++) {
       printf("%02x ", worker.chunk[i]);
     }
-    printf("\n took %ld ns\n---------------\n", test_time.count());
+    printf("\n took %lld ns\n---------------\n", test_time.count());
   }
   return; 
 }
@@ -4020,7 +4020,7 @@ void optest_aarch64(int op, workerData &worker, byte testData[32], OpTestResult 
     for (int i = worker.pos1; i < worker.pos1 + 32; i++) {
       printf("%02x ", worker.chunk[i]);
     }
-    printf("\n took %ld ns\n---------------\n", test_time.count());
+    printf("\n took %lld ns\n---------------\n", test_time.count());
   }
   return; 
 }

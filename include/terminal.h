@@ -85,18 +85,20 @@ static const char* inputIntro = "Please provide your mining settings (leave fiel
 static int colorPreTable[] = {
   0,0,0,0,91,
   0,0,0,0,1,
-  0,0,0,0,1,
+  1,0,0,0,1,
   0
 };
 static int colorTable[] = {
   0,0,0,36,91,
   0,0,0,0,91,
-  0,0,0,0,93,
+  32,0,0,0,93,
   37
 };
 
+
 #define CYAN 3
 #define RED 4
+#define GREEN 10
 #define BRIGHT_YELLOW 14
 #define BRIGHT_WHITE 15
 
