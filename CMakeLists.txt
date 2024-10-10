@@ -177,9 +177,7 @@ include(${CPM_DOWNLOAD_LOCATION})
 
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 
-if (NOT WIN32)
-  find_package(OpenSSL REQUIRED)
-endif()
+find_package(OpenSSL REQUIRED)
 
 # Add OpenSSL Libraries
 if(CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
