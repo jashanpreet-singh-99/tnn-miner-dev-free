@@ -25,6 +25,15 @@
 
 #include "algo_definitions.h"
 
+#include <filesystem>
+#include <boost/beast.hpp>
+
+namespace beast = boost::beast;
+namespace bhttp = beast::http;
+namespace bnet = boost::asio;
+using btcp = boost::asio::ip::tcp;
+
+
 #define CMP_LT_U256(X, Y) (X[3] != Y[3] ? X[3] < Y[3] : X[2] != Y[2] ? X[2] < Y[2] \
                                                                             : X[1] != Y[1]   ? X[1] < Y[1] \
                                                                                                            : X[0] < Y[0])

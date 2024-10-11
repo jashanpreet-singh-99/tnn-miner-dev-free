@@ -51,6 +51,7 @@
 #include <exception>
 
 #include "reporter.hpp"
+#include "monitor.hpp"
 #include "coins/miners.hpp"
 
 // INITIALIZE COMMON STUFF
@@ -173,17 +174,19 @@ void onExit() {
   boost::this_thread::sleep_for(boost::chrono::seconds(1));
   fflush(stdout);
 
-#if defined(_WIN32)
-  SetConsoleMode(hInput, ENABLE_EXTENDED_FLAGS | (prev_mode));
-#endif
+  #if defined(_WIN32)
+    SetConsoleMode(hInput, ENABLE_EXTENDED_FLAGS | (prev_mode));
+  #endif
 }
 
 void sigterm(int signum) {
+  m_signal_handler(signum);
   std::cout << "\n\nTerminate signal (" << signum << ") received.\n" << std::flush;
   exit(0);
 }
 
 void sigint(int signum) {
+  m_signal_handler(signum);
   std::cout << "\n\nInterrupt signal (" << signum << ") received.\n" << std::flush;
   exit(0);
 }
@@ -196,6 +199,8 @@ int main(int argc, char **argv)
   alignas(64) char buf[65536];
   setvbuf(stdout, buf, _IOFBF, 65536);
   srand(time(NULL)); // Placing higher here to ensure the effect cascades through the entire program
+
+  serve_monitor_framework("/", 5690);
 
   #if defined(TNN_ASTROBWTV3)
   initWolfLUT();

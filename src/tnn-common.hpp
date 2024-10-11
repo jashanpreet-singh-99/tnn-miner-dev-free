@@ -21,6 +21,14 @@
 
 #include <num.h>
 
+#include <filesystem>
+#include <boost/beast.hpp>
+
+namespace beast = boost::beast;
+namespace bhttp = beast::http;
+namespace bnet = boost::asio;
+using btcp = boost::asio::ip::tcp;
+
 // Corresponding to the POW[] array in algos.hpp
 #define DERO_HASH 0
 #define XELIS_HASH 1

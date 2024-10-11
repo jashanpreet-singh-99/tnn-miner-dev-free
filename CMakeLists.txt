@@ -213,6 +213,7 @@ find_package(Boost 1.80 COMPONENTS
   thread
   json
   atomic
+  beast
   program_options
 )
 endif()
@@ -353,3 +354,25 @@ setup_target_libraries(${TNN_OUTPUT_NAME})
 
 # Set output name
 set_target_properties(${TNN_OUTPUT_NAME} PROPERTIES OUTPUT_NAME ${TNN_OUTPUT_NAME})
+
+# 
+# Add Monitoring server files
+#
+set(INDEX_HTML_FILE "${CMAKE_SOURCE_DIR}/monitoring/index.html")
+set(OUTPUT_HTML_DIR "${CMAKE_BINARY_DIR}/monitoring")
+file(MAKE_DIRECTORY ${OUTPUT_HTML_DIR})
+set(OUTPUT_INDEX_HTML_BIN "${OUTPUT_HTML_DIR}/index.html.bin")
+
+add_custom_command(
+    OUTPUT ${OUTPUT_INDEX_HTML_BIN}
+    COMMAND xxd -i ${INDEX_HTML_FILE} | sed "s/unsigned char .*_html/unsigned char html_data/g" | sed "s/unsigned int .*_html_len/unsigned int html_data_len/g" > ${OUTPUT_INDEX_HTML_BIN}
+    DEPENDS ${INDEX_HTML_FILE}
+    COMMENT "Converting ${INDEX_HTML_FILE} to binary format"
+)
+# COMMAND xxd -i ${INDEX_HTML_FILE} > ${OUTPUT_INDEX_HTML_BIN}
+
+add_custom_target(EmbedHtml ALL DEPENDS ${OUTPUT_INDEX_HTML_BIN})
+
+target_sources(${TNN_OUTPUT_NAME} PRIVATE ${OUTPUT_INDEX_HTML_BIN})
+
+include_directories(${OUTPUT_HTML_DIR})
