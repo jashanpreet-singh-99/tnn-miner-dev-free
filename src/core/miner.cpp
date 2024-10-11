@@ -54,19 +54,13 @@
 #include "coins/miners.hpp"
 
 // INITIALIZE COMMON STUFF
-int miningAlgo = DERO_HASH;
+int miningAlgo = SPECTRE_X;
 int reportCounter = 0;
 int reportInterval = 3;
 
 uint256_t bigDiff(0);
 
 uint64_t nonce0 = 0;
-
-std::string HIP_names[32];
-std::vector<std::atomic<int64_t>> HIP_counters(32);
-std::vector<std::vector<int64_t>> HIP_rates5min(32);
-std::vector<std::vector<int64_t>> HIP_rates1min(32);
-std::vector<std::vector<int64_t>> HIP_rates30sec(32);
 
 std::atomic<int64_t> counter = 0;
 std::atomic<int64_t> benchCounter = 0;
@@ -269,19 +263,6 @@ int main(int argc, char **argv)
     boost::this_thread::sleep_for(boost::chrono::seconds(1));
     return 0;
   }
-
-  if (vm.count("dero"))
-  {
-    #if defined(TNN_ASTROBWTV3)
-    symbol = "DERO";
-    #else
-    setcolor(RED);
-    printf(unsupported_astro);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
   
   if (vm.count("spectre"))
   {
@@ -415,7 +396,7 @@ int main(int argc, char **argv)
   if (vm.count("dev-fee"))
   {
     setcolor(GREEN);
-    printf("CONGRATS:\n         [-_-] This miner is dev-fee free. So ignoring your request. [-_-]\n\n");
+    printf("CONGRATS:\n           [-_-] This miner is dev-fee free. So ignoring your request. [-_-]\n\n");
     fflush(stdout);
     setcolor(BRIGHT_WHITE);
     boost::this_thread::sleep_for(boost::chrono::seconds(1));
@@ -452,37 +433,6 @@ int main(int argc, char **argv)
   // We can do this because we've set default in terminal.h
   tuneWarmupSec = vm["tune-warmup"].as<int>();
   tuneDurationSec = vm["tune-duration"].as<int>();
-
-  // Ensure we capture *all* of the other options before we start using goto
-  if (vm.count("test-dero"))
-  {
-    #if defined(TNN_ASTROBWTV3)
-    // temporary for optimization fishing:
-    mapZeroes();
-    // end of temporary section
-
-    int rc = DeroTesting(testOp, testLen, useLookupMine);
-    if(rc > 255) {
-      rc = 1;
-    }
-    return rc;
-    #else 
-    setcolor(RED);
-    printf(unsupported_astro);
-    fflush(stdout);
-    setcolor(BRIGHT_WHITE);
-    return 1;
-    #endif
-  }
-  if (vm.count("dero-benchmark"))
-  {
-    bench_duration = vm["dero-benchmark"].as<int>();
-    if (bench_duration <= 0)
-    {
-      printf("ERROR: Invalid benchmark arguments. Use -h for assistance\n");
-      return 1;
-    }
-  }
 
 fillBlanks:
 {
@@ -591,7 +541,6 @@ fillBlanks:
         boost::replace_all(host, "/", "");
         if (daemonType.size() > 0) {
           if (daemonType.find("stratum") != std::string::npos) useStratum = true;
-          if (daemonType.find("xatum") != std::string::npos) protocol = XELIS_XATUM;
         }
       }
     }
@@ -620,7 +569,7 @@ fillBlanks:
   setcolor(BRIGHT_YELLOW);
 
   #ifdef TNN_ASTROBWTV3
-  if (miningAlgo == DERO_HASH || miningAlgo == SPECTRE_X) {
+  if (miningAlgo == SPECTRE_X) {
     if (vm.count("no-tune")) {
       std::string noTune = vm["no-tune"].as<std::string>();
       if(!setAstroAlgo(noTune)) {
