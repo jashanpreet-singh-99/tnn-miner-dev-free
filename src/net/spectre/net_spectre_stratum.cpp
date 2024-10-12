@@ -445,6 +445,7 @@ void spectre_stratum_session(
 
   while (true)
   {
+    std::cout << "Here" << std::endl;
     bool *C = &isConnected;
     bool *B = &submitting;
     try

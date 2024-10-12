@@ -200,7 +200,7 @@ int main(int argc, char **argv)
   setvbuf(stdout, buf, _IOFBF, 65536);
   srand(time(NULL)); // Placing higher here to ensure the effect cascades through the entire program
 
-  serve_monitor_framework("/", 5690);
+  serve_monitor_framework(5690);
 
   #if defined(TNN_ASTROBWTV3)
   initWolfLUT();
@@ -598,7 +598,6 @@ Mining:
     return EXIT_FAILURE;
   }
   boost::thread GETWORK(getWork, miningAlgo);
-  // setPriority(GETWORK.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
 
   unsigned int n = std::thread::hardware_concurrency();
 
@@ -613,8 +612,6 @@ Mining:
     {
       setAffinity(t.native_handle(), i);
     }
-    // if (threads == 1 || (n > 2 && i <= n - 2))
-    // setPriority(t.native_handle(), THREAD_PRIORITY_ABOVE_NORMAL);
 
     std::cout << i + 1;
     if(i+1 != threads)
@@ -633,15 +630,11 @@ Mining:
     boost::this_thread::yield();
   }
 
-  // boost::thread reportThread([&]() {
-  // Set an expiry time relative to now.
   update_timer.expires_after(std::chrono::seconds(1));
 
   // Start an asynchronous wait.
   update_timer.async_wait(update_handler);
   my_context.run();
-  // });
-  // setPriority(reportThread.native_handle(), THREAD_PRIORITY_TIME_CRITICAL);
 
   for(;;) {
     std::this_thread::yield();
@@ -758,6 +751,17 @@ void setPriority(boost::thread::native_handle_type t, int priority)
 #endif
 }
 
+std::atomic<bool> stopMining(false);
+
+bool shouldStopMining(bool stopMining) {
+  if (stopMining) { 
+    setcolor(RED);
+    std::cout << "Stopping thread: STOP MINING : " << stopMining << std::endl << std::flush;
+    setcolor(BRIGHT_WHITE);
+  }
+  return stopMining;
+}
+
 void getWork(int algo)
 {
   net::io_context ioc;
@@ -768,6 +772,11 @@ void getWork(int algo)
 
 connectionAttempt:
   bool *B = &isConnected;
+
+  if (shouldStopMining(stopMining)) { 
+    return; 
+  } 
+
   *B = false;
   //  mutex.lock();
   setcolor(BRIGHT_YELLOW);
@@ -821,6 +830,9 @@ connectionAttempt:
   while (*B)
   {
     caughtDisconnect = false;
+    if (shouldStopMining(stopMining)) {
+      return; 
+    } 
     boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
   }
   //  mutex.lock();

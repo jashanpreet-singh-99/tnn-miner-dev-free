@@ -8,6 +8,6 @@
 #include <fstream>
 #include <iostream>
 
-void serve_monitor_framework(const std::string& dist_directory, unsigned short port);
+void serve_monitor_framework(unsigned short port);
 
 void m_signal_handler(int signal);

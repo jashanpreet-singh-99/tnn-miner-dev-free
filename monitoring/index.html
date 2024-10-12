@@ -3,9 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Embedded HTML</title>
+    <title>Spectre Monitor</title>
 </head>
 <body>
     <h1>Hello, World! inside binary</h1>
+    <h3>Restart Miner</h3>
+    <button id="restart-btn">Restart</button>
+
+    <script>
+        document.getElementById('restart-btn').addEventListener('click', function() {
+            fetch('/restart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+            }).then(response => {
+            if (response.ok) {
+                alert('Miner restarted successfully.');
+            } else {
+                alert('Failed to restart the miner.');
+            }
+            }).catch(error => {
+                console.error('Error restarting the process:', error);
+            });
+        });
+    </script>
 </body>
 </html>

@@ -93,3 +93,6 @@ extern boost::asio::io_context my_context;
 // Construct a timer without setting an expiry time.
 extern boost::asio::steady_timer update_timer;
 extern std::chrono::time_point<std::chrono::steady_clock> g_start_time;
+
+// Miner controls
+extern std::atomic<bool> stopMining;

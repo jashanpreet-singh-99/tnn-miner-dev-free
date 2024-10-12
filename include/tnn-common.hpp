@@ -92,6 +92,9 @@ extern boost::asio::io_context my_context;
 extern boost::asio::steady_timer update_timer;
 extern std::chrono::time_point<std::chrono::steady_clock> g_start_time;
 
+// Miner controls
+extern std::atomic<bool> stopMining;
+
 inline std::string cpp_int_toHex(boost::multiprecision::cpp_int in) {
   std::ostringstream oss;
   oss << std::hex << in;
