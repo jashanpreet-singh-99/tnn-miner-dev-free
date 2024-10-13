@@ -43,6 +43,7 @@
 /cmake-old
 /extern-old
 /src-old
+/monitoring
 
 # Xelis rust resources
 /src/xelis-hash/**.rs
