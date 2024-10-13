@@ -293,26 +293,20 @@ include_directories(
   "${PROJECT_SOURCE_DIR}/src/crypto/"
   "${PROJECT_SOURCE_DIR}/src/broadcast/"
   "${PROJECT_SOURCE_DIR}/lib"
-  )
-# "${PROJECT_SOURCE_DIR}/include/highwayhash"
-# "${PROJECT_SOURCE_DIR}/src/astrobwtv3/"
-# "${PROJECT_SOURCE_DIR}/src/xelis-hash/"
-# "${PROJECT_SOURCE_DIR}/extern"
+)
 
 file(GLOB_RECURSE SOURCES_CORE
-"${PROJECT_SOURCE_DIR}/src/core/*.cpp"
-"${PROJECT_SOURCE_DIR}/src/core/*.c"
-"${PROJECT_SOURCE_DIR}/src/broadcast/*.cpp"
-"${PROJECT_SOURCE_DIR}/src/coins/dummy_miners.cpp"
+  "${PROJECT_SOURCE_DIR}/src/core/*.cpp"
+  "${PROJECT_SOURCE_DIR}/src/core/*.c"
+  "${PROJECT_SOURCE_DIR}/src/broadcast/*.cpp"
+  "${PROJECT_SOURCE_DIR}/src/coins/dummy_miners.cpp"
+  "${PROJECT_SOURCE_DIR}/include/libkeccak/*.c"
 )
-# "${PROJECT_SOURCE_DIR}/include/libkeccak/*.c"
-# "${PROJECT_SOURCE_DIR}/src/crypto/cshake/*.c"
 
 file(GLOB SOURCES_NET
   "${PROJECT_SOURCE_DIR}/src/net/*.cpp"
   "${PROJECT_SOURCE_DIR}/src/net/*.c"
   )
-# "${PROJECT_SOURCE_DIR}/src/crypto/sha3/*.c"
 
 if(USE_ASTRO_SPSA AND NOT CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   set(SPSA_OS_PREFIX "linux")
@@ -341,12 +335,9 @@ else()
   message(WARNING "Skipping Asto on Mac ........")
 endif()
 
-include(cmake/astrobwtv3.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/astrobwtv3.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/setup.cmake)
 
-include(cmake/setup.cmake)
-
-
-# set(TNN_OUTPUT_NAME "tnn-miner-${INTERNAL_TNN_VERSION}_cpu")
 set(TNN_OUTPUT_NAME "tnn-miner-cpu")
 add_executable(${TNN_OUTPUT_NAME} ${SOURCES_CORE} ${SOURCES_NET} ${SOURCES_CRYPTO} ${HEADERS_CRYPTO})
 
@@ -358,21 +349,4 @@ set_target_properties(${TNN_OUTPUT_NAME} PROPERTIES OUTPUT_NAME ${TNN_OUTPUT_NAM
 # 
 # Add Monitoring server files
 #
-set(INDEX_HTML_FILE "${CMAKE_SOURCE_DIR}/monitoring/index.html")
-set(OUTPUT_HTML_DIR "${CMAKE_BINARY_DIR}/monitoring")
-file(MAKE_DIRECTORY ${OUTPUT_HTML_DIR})
-set(OUTPUT_INDEX_HTML_BIN "${OUTPUT_HTML_DIR}/index.html.bin")
-
-add_custom_command(
-    OUTPUT ${OUTPUT_INDEX_HTML_BIN}
-    COMMAND xxd -i ${INDEX_HTML_FILE} | sed "s/unsigned char .*_html/unsigned char html_data/g" | sed "s/unsigned int .*_html_len/unsigned int html_data_len/g" > ${OUTPUT_INDEX_HTML_BIN}
-    DEPENDS ${INDEX_HTML_FILE}
-    COMMENT "Converting ${INDEX_HTML_FILE} to binary format"
-)
-# COMMAND xxd -i ${INDEX_HTML_FILE} > ${OUTPUT_INDEX_HTML_BIN}
-
-add_custom_target(EmbedHtml ALL DEPENDS ${OUTPUT_INDEX_HTML_BIN})
-
-target_sources(${TNN_OUTPUT_NAME} PRIVATE ${OUTPUT_INDEX_HTML_BIN})
-
-include_directories(${OUTPUT_HTML_DIR})
+include(${CMAKE_SOURCE_DIR}/cmake/monitor.cmake)

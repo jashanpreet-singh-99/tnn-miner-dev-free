@@ -1,8 +1,37 @@
 #include "monitor.hpp"
-#include "index.html.bin"
+#include "binary_config.h"
 
-// html_data and html_data_len comes from binary so ignore
-std::string_view html_content(reinterpret_cast<const char*>(html_data), html_data_len);
+// Helper function to convert string_view to string
+inline std::string to_string(boost::core::basic_string_view<char> str) {
+    return {str.data(), str.size()};
+}
+
+// Helper function to determine content type based on the file extension
+beast::string_view get_content_type(const std::string& path) {
+    const std::unordered_map<std::string, beast::string_view> mime_types = {
+        {".html", "text/html"},
+        {".css", "text/css"},
+        {".js", "application/javascript"},
+        {".json", "application/json"},
+        {".png", "image/png"},
+        {".jpg", "image/jpeg"},
+        {".svg", "image/svg+xml"}
+    };
+    
+    std::string extension;
+    if (path == "/") {
+        extension = ".html"; // special case for root
+    } else {
+        size_t dot_pos = path.find_last_of('.');
+        if (dot_pos != std::string::npos) {
+            extension = path.substr(dot_pos);
+        } else {
+            extension = "";
+        }
+    }
+
+    return mime_types.count(extension) ? mime_types.at(extension) : "application/octet-stream";
+}
 
 void restart_mining_threads() {
     stopMining = true;
@@ -13,34 +42,51 @@ void handle_request(
     bhttp::request<bhttp::string_body> req,
     bhttp::response<bhttp::string_body>& res
 ) {
-    // std::filesystem::path requested_file(to_string(doc_root) + to_string(req.target())); // doc_root + req.target();
-    // if (std::filesystem::exists(requested_file) && std::filesystem::is_directory(requested_file)) {
-    //     std::ifstream file(requested_file.c_str());
-    //     std::stringstream buffer;
-    //     buffer << file.rdbuf();
-    //     res.result(bhttp::status::ok);
-    //     // res.body() = buffer.str();
-    //     res.body() = html_content;
-    //     res.set(bhttp::field::content_type, "text/html");
-    //     res.prepare_payload();
-    // } else {
-    //     res.result(bhttp::status::not_found);
-    //     res.body() = "File not found!";
-    //     res.prepare_payload();
-    // }
-    if (req.method() == bhttp::verb::post && req.target() == "/restart") {
-        res.result(bhttp::status::ok);
-        res.body() = "Restarting Miner....";
+    std::string requested_path = to_string(req.target());
+    bhttp::verb method = req.method();
+    std::cout << "Request:" << method << ": " << requested_path << std::endl;
+
+    if (method == bhttp::verb::get) {
+        // GET
+        if (requested_path == "/" || requested_path == "/dash") {
+            requested_path = "/index.html";
+        }
+
+        // Resource file request
+        auto it = file_map.find(requested_path);
+        if (it != file_map.end()) {
+            const auto& [data, length] = it->second;
+            // std::cout << "Data: " << data << std::endl;
+            // std::cout << "Length: " << length << std::endl;
+
+            res.result(bhttp::status::ok);
+            res.body() = boost::core::basic_string_view<char>(reinterpret_cast<const char*>(data), length);
+            res.set(bhttp::field::content_type, get_content_type(requested_path));
+            res.prepare_payload();
+            return;
+        }
+
+        try {
+            res.result(bhttp::status::ok);
+            res.body() = "Not implemented: data fetch only.";
+            res.set(bhttp::field::content_type, "text/plain");
+        } catch (const std::exception& e) {
+            res.result(bhttp::status::not_found);
+            res.body() = "Requested file not found: " + requested_path;
+        }
+
         res.prepare_payload();
+    } else if (method == bhttp::verb::post) {
+        // POST
+        if (requested_path == "/restart") {
+            res.result(bhttp::status::ok);
+            res.body() = "Restarting Miner....";
+            res.prepare_payload();
 
-        restart_mining_threads();
-        return;
+            restart_mining_threads();
+            return;
+        }
     }
-
-    res.result(bhttp::status::ok);
-    res.body() = html_content;
-    res.set(bhttp::field::content_type, "text/html");
-    res.prepare_payload();
 }
 
 void start_server(unsigned short port) {

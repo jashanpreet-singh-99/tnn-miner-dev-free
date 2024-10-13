@@ -5,6 +5,8 @@
 #include <string>
 
 #include <boost/program_options.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/ssl.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/spawn.hpp>
@@ -27,6 +29,7 @@
 namespace beast = boost::beast;
 namespace bhttp = beast::http;
 namespace bnet = boost::asio;
+namespace ssl = boost::asio::ssl;
 using btcp = boost::asio::ip::tcp;
 
 // Corresponding to the POW[] array in algos.hpp

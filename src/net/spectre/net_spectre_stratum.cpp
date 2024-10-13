@@ -1,27 +1,8 @@
 #include "../net.hpp"
 #include <hex.h>
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/ssl.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/beast/websocket/ssl.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/asio/spawn.hpp>
-#include <boost/asio/ssl/error.hpp>
-#include <boost/asio/ip/host_name.hpp>
-#include <boost/json.hpp>
-
 #include <stratum/stratum.h>
 #include <spectrex/spectrex.h>
-
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 int handleSpectreStratumPacket(boost::json::object packet, SpectreStratum::jobCache *cache)
 {
@@ -235,9 +216,9 @@ void spectre_stratum_session(
     std::string const &port,
     std::string const &wallet,
     std::string const &worker,
-    net::io_context &ioc,
+    bnet::io_context &ioc,
     ssl::context &ctx,
-    net::yield_context yield)
+    bnet::yield_context yield)
 {
   ctx.set_options(boost::asio::ssl::context::default_workarounds |
                   boost::asio::ssl::context::no_sslv2 |
