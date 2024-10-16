@@ -1,0 +1,43 @@
+@import '../../../../app/styles/_colors.scss';
+@import '../../../../app/styles/_fonts.scss';
+
+.quick-btn {
+    height: 52px;
+    margin: 10px;
+    padding: 4px 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    border-radius: 32px;
+    box-sizing: border-box;
+    background-color: var(--quick-btn-color);
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    user-select: none;
+
+    span {
+        font-size: 20sp;
+        color: var(--quick-bar-text-d-color);
+    }
+
+    .label {
+        font-size: large;
+        color: var(--quick-bar-text-d-color);
+        @include font-regular($prime-text);
+    }
+
+    &:hover, 
+    &.selected {
+        background-color: var(--quick-btn-selected-color);
+
+        span,
+        .label {
+            color: var(--quick-bar-text-l-color);
+        }
+    }
+
+    &:active {
+        transform: scale(0.9);
+    }
+}

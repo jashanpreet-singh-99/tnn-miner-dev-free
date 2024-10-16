@@ -48,7 +48,12 @@ void handle_request(
 
     if (method == bhttp::verb::get) {
         // GET
-        if (requested_path == "/" || requested_path == "/dash") {
+        if (requested_path == "/" ||
+            requested_path == "/Dash" ||
+            requested_path == "/Payment" ||
+            requested_path == "/History" ||
+            requested_path == "/Settings") 
+        {
             requested_path = "/index.html";
         }
 

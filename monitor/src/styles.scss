@@ -1,1 +1,30 @@
 /* You can add global styles to this file, and also import other style files */
+
+@import 'app/styles/_fonts.scss';
+@import 'app/styles/_colors.scss';
+@import 'app/styles/_dims.scss';
+
+.light-mode {
+    @include light-mode;
+}
+
+.dark-mode {
+    @include dark-mode;
+}
+
+body, html {
+    display: block;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    position: relative;
+
+    color: var(--text-color);
+
+    -ms-overflow-style: none;
+    scrollbar-width: none; 
+
+    background-color: var(--bg-color);
+    transition: all 0.3s ease-in-out;
+}

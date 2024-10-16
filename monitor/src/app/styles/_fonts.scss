@@ -1,0 +1,26 @@
+// @import '../../../../styles/fonts.scss';
+
+@font-face {
+    font-family: 'Overpass';
+    src: url('/assets/fonts/overpass.ttf')  format('truetype');
+    font-weight: bold;
+}
+
+$prime-text: "Exo", sans-serif;
+$common-text: "Rubik", sans-serif;
+//$brand-text: "Macondo", cursive;
+$brand-text: "Overpass";
+
+
+$text-thin : 100;
+$text-light: 300;
+$text-regular: 400;
+$text-medium: 500;
+$text-semibold: 600;
+$text-bold: 700;
+
+@mixin font-regular($font-family, $font-weight: 400) {
+    font-family: $font-family;
+    font-weight: $font-weight;
+    font-style: normal;
+}

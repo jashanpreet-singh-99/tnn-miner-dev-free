@@ -1,0 +1,27 @@
+<div class="quick-bar-container">
+    <div class="logo-box">
+        <button class="logo">
+            <img src="assets/spectre-logo.svg">
+        </button>
+    </div>
+    <ng-container *ngFor="let menu of visibleMenus; let i = index">
+        <quick-btn
+            [icon]="menu.img"
+            [label]="menu.text"
+            [selected]="isSelectedMenu(i)"
+            (click)="navigateToSelectedMenu(i)"
+        ></quick-btn>
+    </ng-container>
+    <div class="gap-divider"></div>
+    <button
+        class="menu-btn mrg-no-r"
+        (click)="switchToDarkMode()">
+        <span class="material-symbols-rounded">contrast</span>
+   </button>
+    <button
+     class="menu-btn"
+     [class.selected]="isSelectedMenu(settingsIndex)"
+     (click)="navigateToSelectedMenu(settingsIndex)">
+        <span class="material-symbols-rounded">settings</span>
+    </button>
+</div>
